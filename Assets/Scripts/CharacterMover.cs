@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Splines;
 
 namespace Rail
 {
@@ -52,6 +53,23 @@ namespace Rail
 
             ApplyGravityAndJump(out float yMove);
 
+            // 移動前にCapsuleCastで先読み
+            var blocked = Physics.CapsuleCast(
+                point1: this.transform.position + Vector3.up
+                    * (this.characterController.height - this.characterController.radius),
+                point2: this.transform.position + Vector3.up
+                    * this.characterController.radius,
+                radius: this.characterController.radius,
+                direction: xzMove.normalized,
+                maxDistance: xzMove.magnitude + 0.1f);
+
+            if (blocked)
+            {
+                // 壁がある方向にはtを戻す
+                RevertT();
+            }
+
+            // CharacterControllerで移動
             this.characterController.Move(
                 new Vector3(
                     x: xzMove.x,
