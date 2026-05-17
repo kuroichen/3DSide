@@ -16,6 +16,16 @@ namespace Rail
         [SerializeField]
         float rotationSmooth = 5.0f;
 
+        void Start()
+        {
+            this.targetMover.OnSplineDirectionChanged += isRightward =>
+            {
+                //this.offset.z = isRightward
+                    //? -Mathf.Abs(this.offset.z) // 右向き → 左側から映す
+                    //: Mathf.Abs(this.offset.z); // 左向き → 右側から映す
+            };
+        }
+
         void LateUpdate()
         {
             // 接線の方向を取得

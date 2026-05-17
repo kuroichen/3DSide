@@ -82,7 +82,7 @@ namespace Rail
             // 天井に当たったら上昇を止める
             if (this.characterController.collisionFlags.HasFlag(CollisionFlags.Above))
             {
-                this.verticalVelocity = 0.0f;
+                this.verticalVelocity = -1.0f;
             }
 
             if (this.characterController.isGrounded)
