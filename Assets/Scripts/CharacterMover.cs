@@ -3,7 +3,7 @@ using UnityEngine.Splines;
 
 namespace Rail
 {
-    public class CharacterMover : SplineMover
+    public abstract class CharacterMover : SplineMover, IDamageable
     {
         [SerializeField]
         float jumpForce = 8.0f;
@@ -11,27 +11,49 @@ namespace Rail
         [SerializeField]
         float gravity = -20.0f;
 
+        [SerializeField]
+        float rotationSpeed = 10.0f;
+
         protected CharacterController characterController;
         float verticalVelocity = 0.0f;
+
+        bool wasGrounded = false;
+
+        Quaternion targetRotation = Quaternion.identity;
+
+        int wallLayerMask = 0;
 
 
         protected override void Awake()
         {
             base.Awake();
             this.characterController = GetComponent<CharacterController>();
+            this.wallLayerMask = LayerMask.GetMask("Terrain", "Gimmick");
         }
 
         protected override void Update()
         {
             base.Update();
 
-            // 向きはSplineMoverの接線を使用
-            if (this.Tangent != Vector3.zero)
-            {
-                this.transform.rotation = Quaternion.LookRotation(this.Tangent);
-            }
+            UpdateRotation();
 
             ApplyToCharacterController();
+        }
+
+        public abstract void TakeDamage(DamageInfo damageInfo);
+
+        public void AddImpulse(Vector3 worldImpulse)
+        {
+            var length = this.splineContainer.CalculateLength();
+
+            // XZ成分をSplineの接線との内積でt速度に変換
+            // 内積が正→進行方向（t+）, 負→逆方向（t-）
+            var tangentXZ = new Vector3(this.Tangent.x, 0.0f, this.Tangent.z).normalized;
+            var dot = Vector3.Dot(worldImpulse, tangentXZ);
+            this.impulseVelocityT += dot / (this.speed / length);
+
+            // Y成分は垂直速度に直接加算
+            this.verticalVelocity += worldImpulse.y;
         }
 
         /// <summary>
@@ -40,6 +62,32 @@ namespace Rail
         /// </summary>
         /// <returns></returns>
         protected virtual bool ShouldJump() => false;
+
+        void UpdateRotation()
+        {
+            if (this.Tangent == Vector3.zero)
+            {
+                return;
+            }
+
+            var input = GetInput();
+
+            if (input != 0.0f)
+            {
+                // 入力方向に応じて接線の向きを決める
+                // 交代時は接戦を反転させて後ろを向く
+                var lookDirection = input > 0.0f 
+                    ? this.Tangent 
+                    : -this.Tangent;
+                this.targetRotation = Quaternion.LookRotation(lookDirection);
+            }
+
+            // 入力がなくても補間は続ける（向き変更の途中で止まらないように）
+            this.transform.rotation = Quaternion.Slerp(
+                this.transform.rotation,
+                this.targetRotation,
+                this.rotationSpeed * Time.deltaTime);
+        }
 
         void ApplyToCharacterController()
         {
@@ -61,7 +109,8 @@ namespace Rail
                     * this.characterController.radius,
                 radius: this.characterController.radius,
                 direction: xzMove.normalized,
-                maxDistance: xzMove.magnitude + 0.1f);
+                maxDistance: xzMove.magnitude + 0.1f,
+                layerMask: this.wallLayerMask);
 
             if (blocked)
             {
@@ -87,21 +136,59 @@ namespace Rail
 
             if (this.characterController.isGrounded)
             {
+                // 着地した瞬間を検知
+                if (!wasGrounded)
+                {
+                    OnLanded();
+                }
+
                 // 接地中は小さな下向きの力で地面に張り付かせる
-                this.verticalVelocity = -1.0f;
+                // ただしAddImpulseで上昇中の場合は上書きしない
+                if (this.verticalVelocity <= 0.0f)
+                {
+                    this.verticalVelocity = -1.0f;
+                }
 
                 if (ShouldJump())
                 {
                     this.verticalVelocity = jumpForce;
+                    OnJumped(); // ジャンプトリガー
                 }
+
+                this.wasGrounded = true;
             }
             else
             {
+                this.wasGrounded = false;
+
                 // 空中は重力を加算
                 this.verticalVelocity += gravity * Time.deltaTime;
             }
 
+            if (this.animator != null)
+            {
+                this.animator.SetBool("IsGrounded", this.characterController.isGrounded);
+            }
+
             yMove = this.verticalVelocity * Time.deltaTime;
+        }
+
+
+
+        void OnJumped()
+        {
+            if (this.animator != null)
+            {
+                this.animator.SetTrigger("JumpTrigger");
+            }
+        }
+
+        void OnLanded()
+        {
+            if (this.animator != null)
+            {
+                this.animator.SetBool("IsGrounded", true);
+            }
         }
     }
 }

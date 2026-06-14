@@ -12,12 +12,18 @@ namespace Rail
     {
         [SerializeField]
         protected SplineContainer splineContainer = null;
+        
+        [SerializeField]
+        protected Animator animator = null;
 
         [SerializeField]
         protected float speed = 5.0f;
 
         [SerializeField, Range(0, 1)]
         protected float t = 0.0f;
+
+        [SerializeField]
+        float impulseDecay = 10.0f; // 外力の減衰速度
 
         public event Action<bool> OnSplineDirectionChanged = null;
 
@@ -29,6 +35,7 @@ namespace Rail
         Vector3 previousPosition = Vector3.zero;
         float previousT = 0.0f;
 
+        protected float impulseVelocityT = 0.0f;
 
         protected virtual void Awake(){}
 
@@ -44,9 +51,13 @@ namespace Rail
             // Splineの実際の長さを取得
             float length = this.splineContainer.CalculateLength();
 
-            // tを進める
-            this.t += (input * speed / length) * Time.deltaTime;
+            // 通常入力 + 外力を合算してtを進める
+            var totalInput = input + this.impulseVelocityT;
+            this.t += (totalInput * speed / length) * Time.deltaTime;
             this.t = Mathf.Clamp01(t);
+
+            // 外力を減衰
+            this.impulseVelocityT = Mathf.Lerp(this.impulseVelocityT, 0.0f, this.impulseDecay * Time.deltaTime);
 
             // t値からSpline上の接線(進行方向)を取得
             this.Position = (Vector3)this.splineContainer.EvaluatePosition(t);
@@ -56,6 +67,12 @@ namespace Rail
             CheckGateCrossing();
 
             previousPosition = this.transform.position;
+
+            if (this.animator != null)
+            {
+                var speed = Mathf.Abs(input);
+                this.animator.SetFloat("Speed", speed);
+            }
         }
 
         public void RevertT()
