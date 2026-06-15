@@ -38,15 +38,15 @@ namespace Rail
                 .Do(col => Debug.Log($"[PlayerController]OnTriggerEnter: {col.gameObject.name}"))
                 .Subscribe(col =>
                 {
-                    var direction = this.transform.position - col.transform.position;
-                    direction.y = 0.0f;
-                    TakeDamage(
-                        new DamageInfo
-                        {
-                            damage = 1,
-                            knockback = direction.normalized * this.knockbackForce
-                                + Vector3.up * this.knockbackUpForce,
-                        });
+                    var enemyProperties = col.GetComponent<ICharacterProperties>();
+                    var damage = enemyProperties != null
+                        ? enemyProperties.Attack.Attack
+                        : 0;
+                    TakeDamage(new DamageInfo()
+                    {
+                        attacker = col.transform,
+                        damage = damage,
+                    });
                 })
                 .AddTo(this);
 
@@ -63,9 +63,8 @@ namespace Rail
                     col.GetComponent<IDamageable>()?.TakeDamage(
                         new DamageInfo
                         {
-                            damage = 1,
-                            knockback = direction.normalized * this.knockbackForce
-                                + Vector3.up * this.knockbackUpForce,
+                            damage = this.runtimeStatus.Attack,
+                            attacker = this.transform,
                         });
                 })
                 .AddTo(this);
@@ -98,7 +97,11 @@ namespace Rail
 
         public override void TakeDamage(DamageInfo damageInfo)
         {
-            AddImpulse(damageInfo.knockback);
+            var direction = this.transform.position - damageInfo.attacker.position;
+            direction.y = 0.0f;
+            AddImpulse(direction.normalized * this.knockbackForce + Vector3.up * this.knockbackUpForce);
+            
+            this.runtimeStatus.TakeDamage(damageInfo.damage);
         }
 
         protected override float GetInput()

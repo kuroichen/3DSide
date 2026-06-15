@@ -7,6 +7,10 @@ namespace Rail
     {
         public int damage;
 
-        public Vector3 knockback;
+        // ヒットした位置
+        public Vector3 hitPoint;
+
+        // 攻撃者
+        public Transform attacker;
     }
 }

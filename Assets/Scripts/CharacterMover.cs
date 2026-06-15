@@ -3,10 +3,10 @@ using UnityEngine.Splines;
 
 namespace Rail
 {
-    public abstract class CharacterMover : SplineMover, IDamageable
+    public abstract class CharacterMover : SplineMover, IDamageable, ICharacterProperties
     {
         [SerializeField]
-        float jumpForce = 8.0f;
+        protected CharacterStatus defaultStatus = null;
 
         [SerializeField]
         float gravity = -20.0f;
@@ -14,13 +14,26 @@ namespace Rail
         [SerializeField]
         float rotationSpeed = 10.0f;
 
-        protected CharacterController characterController;
-        float verticalVelocity = 0.0f;
+        // パラメータ
+        protected CharacterStatusRuntime runtimeStatus = null;
 
-        bool wasGrounded = false;
+        // 移動関連
+        protected CharacterController characterController = null;
+
+        protected override float Speed => this.runtimeStatus.Speed;
+
+        // -----------------------------
+        // ICharacterProperties 外部公開用
+        // -----------------------------
+
+        IAttack ICharacterProperties.Attack => this.runtimeStatus;
+        ILife ICharacterProperties.Life => this.runtimeStatus;
+
+        // -----------------------------
 
         Quaternion targetRotation = Quaternion.identity;
-
+        float verticalVelocity = 0.0f;
+        bool wasGrounded = false;
         int wallLayerMask = 0;
 
 
@@ -29,6 +42,8 @@ namespace Rail
             base.Awake();
             this.characterController = GetComponent<CharacterController>();
             this.wallLayerMask = LayerMask.GetMask("Terrain", "Gimmick");
+
+            this.runtimeStatus = new CharacterStatusRuntime(this.defaultStatus);
         }
 
         protected override void Update()
@@ -151,7 +166,7 @@ namespace Rail
 
                 if (ShouldJump())
                 {
-                    this.verticalVelocity = jumpForce;
+                    this.verticalVelocity = this.runtimeStatus.JumpForce;
                     OnJumped(); // ジャンプトリガー
                 }
 

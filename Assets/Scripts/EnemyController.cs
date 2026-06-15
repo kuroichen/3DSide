@@ -1,3 +1,4 @@
+using UniRx;
 using UnityEngine;
 
 namespace Rail
@@ -6,6 +7,12 @@ namespace Rail
     {
         [SerializeField]
         float knockbackDuration = 0.3f; // ノックバック継続時間
+
+        [SerializeField]
+        float knockbackForce = 2.5f;
+
+        [SerializeField]
+        float knockbackUpForce = 3.0f;
 
         float direction = 1.0f;
 
@@ -18,6 +25,21 @@ namespace Rail
 
         EnemyState currentState = EnemyState.Patrol;
         float knockbackTimer = 0.0f;
+
+        protected override void Awake()
+        {
+            base.Awake();
+
+            this.runtimeStatus.OnSubLifeObservable()
+                .Do(_ => Debug.Log($"[Enemy][SubLife] hp: {this.runtimeStatus.CurrentHp}"))
+                .Subscribe(damage => ChangeState(EnemyState.Damage))
+                .AddTo(this);
+
+            this.runtimeStatus.OnDeadObservable()
+                .Do(_ => Debug.Log($"[Enemy][Dead] hp: {this.runtimeStatus.CurrentHp}"))
+                .Subscribe(_ => ChangeState(EnemyState.Dead))
+                .AddTo(this);
+        }
 
         protected override void Update()
         {
@@ -109,10 +131,12 @@ namespace Rail
         {
             if (this.currentState == EnemyState.Dead) return;
 
-            AddImpulse(damageInfo.knockback);
-            ChangeState(EnemyState.Damage);
+            // ノックバック設定
+            var direction = this.transform.position - damageInfo.attacker.position;
+            direction.y = 0.0f;
+            AddImpulse(direction.normalized * this.knockbackForce + Vector3.up * this.knockbackUpForce);
 
-            // TODO ダメージ処理
+            this.runtimeStatus.TakeDamage(damageInfo.damage);
         }
 
         #endregion
