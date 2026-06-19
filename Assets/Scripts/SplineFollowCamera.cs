@@ -13,21 +13,13 @@ namespace Rail
         [SerializeField]
         float positionSmooth = 5.0f;
 
-        [SerializeField]
-        float rotationSmooth = 5.0f;
-
-        void Start()
-        {
-            this.targetMover.OnSplineDirectionChanged += isRightward =>
-            {
-                //this.offset.z = isRightward
-                    //? -Mathf.Abs(this.offset.z) // 右向き → 左側から映す
-                    //: Mathf.Abs(this.offset.z); // 左向き → 右側から映す
-            };
-        }
+        //[SerializeField]
+        //float rotationSmooth = 5.0f;
 
         void LateUpdate()
         {
+            if (this.targetMover == null) return;
+
             // 接線の方向を取得
             var tangent = this.targetMover.Spline.EvaluateTangent(this.targetMover.T);
 
@@ -48,6 +40,19 @@ namespace Rail
             
             // 対象を見る
             this.transform.LookAt(this.targetMover.transform.position);
+        }
+
+        public void SetTarget(SplineMover mover)
+        {
+            this.targetMover = mover;
+            this.targetMover.OnSplineDirectionChanged += OnSplineDirectionChanged;
+        }
+
+        void OnSplineDirectionChanged(bool isRightward)
+        {
+            this.offset.z = isRightward
+                ? Mathf.Abs(this.offset.z) // 右向き → 左側から映す
+                : -Mathf.Abs(this.offset.z); // 左向き → 右側から映す
         }
     }
 }

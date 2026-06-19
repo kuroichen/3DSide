@@ -12,11 +12,23 @@ namespace Rail
         private Subject<Collider> onTriggerEnterSubject = new();
         private Subject<Collision> onCollisionEnterSubject = new();
 
+        [SerializeField]
         Collider hitCollider = null;
 
         void Awake()
         {
-            if (!TryGetComponent<Collider>(out this.hitCollider))
+            if (this.hitCollider == null)
+            {
+                foreach (var col in GetComponents<Collider>())
+                {
+                    if (col is CharacterController) continue;
+
+                    this.hitCollider = col;
+                    break;
+                }
+            }
+
+            if (this.hitCollider == null)
             {
                 Debug.LogWarning($"[CollisionObserver][{this.gameObject.name}]collision not found.");
             }
@@ -47,4 +59,3 @@ namespace Rail
         }
     }    
 }
-

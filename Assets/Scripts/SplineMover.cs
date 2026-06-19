@@ -29,13 +29,19 @@ namespace Rail
 
         public Vector3 Position { get; private set; }
         public Vector3 Tangent { get; private set; }
+
         public SplineContainer Spline => this.splineContainer;
         public float T => this.t;
 
+        // めり込み防止
         Vector3 previousPosition = Vector3.zero;
         float previousT = 0.0f;
 
+        // 外力
         protected float impulseVelocityT = 0.0f;
+
+        // 子クラスoverride用
+        protected virtual float Speed => this.speed;
 
         protected virtual void Awake(){}
 
@@ -53,7 +59,7 @@ namespace Rail
 
             // 通常入力 + 外力を合算してtを進める
             var totalInput = input + this.impulseVelocityT;
-            this.t += (totalInput * speed / length) * Time.deltaTime;
+            this.t += (totalInput * this.Speed / length) * Time.deltaTime;
             this.t = Mathf.Clamp01(t);
 
             // 外力を減衰
@@ -66,12 +72,11 @@ namespace Rail
             // ゲート通過判定
             CheckGateCrossing();
 
-            previousPosition = this.transform.position;
+            this.previousPosition = this.transform.position;
 
             if (this.animator != null)
             {
-                var speed = Mathf.Abs(input);
-                this.animator.SetFloat("Speed", speed);
+                this.animator.SetFloat("Speed", Mathf.Abs(input));
             }
         }
 

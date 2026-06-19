@@ -3,7 +3,7 @@ using UnityEngine.Splines;
 
 namespace Rail
 {
-    public abstract class CharacterMover : SplineMover, IDamageable, ICharacterProperties
+    public abstract class CharacterMover : SplineMover, IDamageable
     {
         [SerializeField]
         protected CharacterStatus defaultStatus = null;
@@ -23,15 +23,15 @@ namespace Rail
         protected override float Speed => this.runtimeStatus.Speed;
 
         // -----------------------------
-        // ICharacterProperties 外部公開用
+        // 外部公開用
         // -----------------------------
 
-        IAttack ICharacterProperties.Attack => this.runtimeStatus;
-        ILife ICharacterProperties.Life => this.runtimeStatus;
+        public IAttack Attack => this.runtimeStatus;
+        public ILife Life => this.runtimeStatus;
 
         // -----------------------------
 
-        Quaternion targetRotation = Quaternion.identity;
+        protected Quaternion targetRotation = Quaternion.identity;
         float verticalVelocity = 0.0f;
         bool wasGrounded = false;
         int wallLayerMask = 0;
@@ -106,6 +106,13 @@ namespace Rail
 
         void ApplyToCharacterController()
         {
+            if (this.characterController == null
+                || !this.characterController.enabled
+                || !this.characterController.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
             // XZ方向の移動量を計算
             // 現在位置とスプライン目標位置の差分をCCに渡す
             Vector3 current = this.transform.position;
