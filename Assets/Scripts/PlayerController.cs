@@ -42,7 +42,8 @@ namespace Rail
         float knockbackTimer = 0.0f;
 
         protected override float GetInput() => this.moveInput.ReadValue<Vector2>().x;
-        protected override bool ShouldJump() => this.jumpInput.WasPressedThisFrame();
+        protected override bool IsJumpPressed() => this.jumpInput.WasPressedThisFrame();
+        protected override bool IsJumpHeld() => this.jumpInput.IsPressed();
 
         public IObservable<Unit> OnDiedObservable()
         {
@@ -51,10 +52,10 @@ namespace Rail
                 .AsUnitObservable();
         }
 
-        public void SetSpline(SplineContainer splineContainer)
+        public override void SetSpline(SplineContainer splineContainer, float t)
         {
-            this.splineContainer = splineContainer;
-            var tangent = (Vector3)this.splineContainer.EvaluateTangent(this.t);
+            base.SetSpline(splineContainer, t);
+            var tangent = this.Tangent;
             tangent.y = 0.0f;
             this.targetRotation = Quaternion.LookRotation(tangent.normalized);
         }
@@ -77,7 +78,7 @@ namespace Rail
                 {
                     var enemy = col.GetComponentInParent<CharacterMover>();
                     var damage = enemy != null
-                        ? enemy.Attack.Attack
+                        ? enemy.AttackProperty.Attack
                         : 0;
                     TakeDamage(new DamageInfo()
                     {

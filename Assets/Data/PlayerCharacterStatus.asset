@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Rail.CharacterStatus
   hp: 3
   speed: 5
-  jumpForce: 8
+  jumpForce: 15.5
   attack: 1

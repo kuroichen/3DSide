@@ -3,16 +3,61 @@ using UnityEngine.Splines;
 
 namespace Rail
 {
-    public abstract class CharacterMover : SplineMover, IDamageable
+    public abstract class CharacterMover : SplineMover, IDamageable, ICharacterProperties
     {
         [SerializeField]
         protected CharacterStatus defaultStatus = null;
 
+        // 非対称重力: 上昇はゆっくり減速し、下降は速く落とす(レトロアクション系のキレのあるジャンプ)
+        // リファレンス値(30fpsフレーム単位): jumpForce 26 / gravityUp 2 / gravityDown 3
+        // scaleJumpByHeightが有効な場合、この2つは身長から自動導出されて上書きされる
         [SerializeField]
-        float gravity = -20.0f;
+        float gravityUp = -36.0f;
+
+        [SerializeField]
+        float gravityDown = -54.0f;
+
+        // --- ジャンプの身長スケーリング ---
+        // 「身長の何倍・何秒で跳ぶか」で指定し、実際の重力・初速は
+        // CharacterController.heightから導出する。モデルの頭身を変えても、
+        // 時間(手触り)を保ったまま飛距離だけが身の丈に合う
+        [SerializeField]
+        bool scaleJumpByHeight = true;
+
+        [SerializeField]
+        float jumpHeightInBodies = 1.67f; // ジャンプ高さ(身長比)。現行の高さ3.34m/身長2.0mと等価
+
+        [SerializeField]
+        float timeToApex = 0.43f; // 上昇時間(秒)。手触りの正体なので身長では変えない
+
+        [SerializeField]
+        float fallGravityRatio = 1.5f; // 下降重力/上昇重力(落下のキレ)
 
         [SerializeField]
         float rotationSpeed = 10.0f;
+
+        [SerializeField]
+        float fallDeathY = -20.0f; // これより下に落ちたら死亡する高さ(奈落)
+
+        // --- ジャンプの手触り(ジャンル標準のテクニック群) ---
+
+        [SerializeField]
+        float jumpCutMultiplier = 0.4f; // ボタンを離した瞬間に上昇速度へ掛ける係数(可変ジャンプ)
+
+        [SerializeField]
+        float coyoteTime = 0.1f; // 接地を離れてからもジャンプを受け付ける猶予(秒)
+
+        [SerializeField]
+        float jumpBufferTime = 0.15f; // 着地前の先行入力を覚えておく時間(秒)
+
+        [SerializeField]
+        float maxFallSpeed = 20.0f; // 落下速度の上限(終端速度)
+
+        [SerializeField]
+        float hardLandFallDistance = 4.0f; // これ以上の高さを落ちたら着地硬直(フルジャンプの落下3.34mでは発生しない)
+
+        [SerializeField]
+        float hardLandStunTime = 0.25f; // 着地硬直の時間(秒)
 
         // パラメータ
         protected CharacterStatusRuntime runtimeStatus = null;
@@ -26,8 +71,8 @@ namespace Rail
         // 外部公開用
         // -----------------------------
 
-        public IAttack Attack => this.runtimeStatus;
-        public ILife Life => this.runtimeStatus;
+        public IAttack AttackProperty => this.runtimeStatus;
+        public ILife LifeProperty => this.runtimeStatus;
 
         // -----------------------------
 
@@ -35,6 +80,24 @@ namespace Rail
         float verticalVelocity = 0.0f;
         bool wasGrounded = false;
         int wallLayerMask = 0;
+
+        // ジャンプの手触り用
+        float coyoteTimer = 0.0f;
+        float jumpBufferTimer = 0.0f;
+        bool canCutJump = false;
+        float derivedJumpVelocity = 0.0f;
+
+        // 着地硬直用
+        float airborneTopY = 0.0f;
+        float landingStunTimer = 0.0f;
+
+        protected bool IsLandingStunned => this.landingStunTimer > 0.0f;
+        protected override float InputScale => IsLandingStunned ? 0.0f : 1.0f;
+
+        // 身長スケーリング有効時は導出値、無効時はステータスの値を使う
+        protected float JumpVelocity => this.scaleJumpByHeight
+            ? this.derivedJumpVelocity
+            : this.runtimeStatus.JumpForce;
 
 
         protected override void Awake()
@@ -44,6 +107,23 @@ namespace Rail
             this.wallLayerMask = LayerMask.GetMask("Terrain", "Gimmick");
 
             this.runtimeStatus = new CharacterStatusRuntime(this.defaultStatus);
+
+            SetupJumpProfile();
+        }
+
+        /// <summary>
+        /// 身長(CharacterController.height)からジャンプの重力・初速を導出する。
+        /// </summary>
+        void SetupJumpProfile()
+        {
+            if (!this.scaleJumpByHeight) return;
+
+            var apex = Mathf.Max(0.01f, this.timeToApex);
+            var jumpHeight = this.jumpHeightInBodies * this.characterController.height;
+
+            this.gravityUp = -2.0f * jumpHeight / (apex * apex);
+            this.gravityDown = this.gravityUp * this.fallGravityRatio;
+            this.derivedJumpVelocity = 2.0f * jumpHeight / apex;
         }
 
         protected override void Update()
@@ -53,30 +133,51 @@ namespace Rail
             UpdateRotation();
 
             ApplyToCharacterController();
+
+            CheckFallDeath();
+        }
+
+        /// <summary>
+        /// 奈落への落下死判定。
+        /// </summary>
+        void CheckFallDeath()
+        {
+            if (this.transform.position.y > this.fallDeathY) return;
+            if (this.runtimeStatus.CurrentHp <= 0) return;
+
+            TakeDamage(new DamageInfo
+            {
+                damage = this.runtimeStatus.CurrentHp,
+                attacker = this.transform,
+            });
         }
 
         public abstract void TakeDamage(DamageInfo damageInfo);
 
         public void AddImpulse(Vector3 worldImpulse)
         {
-            var length = this.splineContainer.CalculateLength();
-
-            // XZ成分をSplineの接線との内積でt速度に変換
-            // 内積が正→進行方向（t+）, 負→逆方向（t-）
+            // XZ成分をSplineの接線方向入力に変換
+            // 内積が正→進行方向、負→逆方向
             var tangentXZ = new Vector3(this.Tangent.x, 0.0f, this.Tangent.z).normalized;
             var dot = Vector3.Dot(worldImpulse, tangentXZ);
-            this.impulseVelocityT += dot / (this.speed / length);
+            this.impulseVelocityT += dot / Mathf.Max(0.001f, this.Speed);
 
             // Y成分は垂直速度に直接加算
             this.verticalVelocity += worldImpulse.y;
+
+            // 外力による上昇は可変ジャンプの減衰対象にしない
+            this.canCutJump = false;
         }
 
         /// <summary>
-        /// ジャンプすべきか。
-        /// 子クラスで上書きする。
+        /// この瞬間にジャンプボタンが押されたか。子クラスで上書きする。
         /// </summary>
-        /// <returns></returns>
-        protected virtual bool ShouldJump() => false;
+        protected virtual bool IsJumpPressed() => false;
+
+        /// <summary>
+        /// ジャンプボタンが押されている最中か。子クラスで上書きする(可変ジャンプ用)。
+        /// </summary>
+        protected virtual bool IsJumpHeld() => false;
 
         void UpdateRotation()
         {
@@ -156,13 +257,43 @@ namespace Rail
                 this.verticalVelocity = -1.0f;
             }
 
-            if (this.characterController.isGrounded)
+            var isGrounded = this.characterController.isGrounded;
+
+            // コヨーテタイム: 接地中は満タン、離れたら減っていく
+            this.coyoteTimer = isGrounded
+                ? this.coyoteTime
+                : this.coyoteTimer - Time.deltaTime;
+
+            // ジャンプバッファ: 押した瞬間から一定時間覚えておく
+            this.jumpBufferTimer -= Time.deltaTime;
+            if (IsJumpPressed())
+            {
+                this.jumpBufferTimer = this.jumpBufferTime;
+            }
+
+            this.landingStunTimer -= Time.deltaTime;
+
+            if (isGrounded)
             {
                 // 着地した瞬間を検知
                 if (!wasGrounded)
                 {
+                    // 落下距離(空中の最高到達点から)でハード着地かを判定
+                    var fallDistance = this.airborneTopY - this.transform.position.y;
+                    var isHardLand = fallDistance >= this.hardLandFallDistance;
+                    if (isHardLand)
+                    {
+                        this.landingStunTimer = this.hardLandStunTime;
+                    }
+                    if (this.animator != null)
+                    {
+                        this.animator.SetBool("HardLand", isHardLand);
+                    }
+
                     OnLanded();
                 }
+
+                this.airborneTopY = this.transform.position.y;
 
                 // 接地中は小さな下向きの力で地面に張り付かせる
                 // ただしAddImpulseで上昇中の場合は上書きしない
@@ -171,25 +302,51 @@ namespace Rail
                     this.verticalVelocity = -1.0f;
                 }
 
-                if (ShouldJump())
-                {
-                    this.verticalVelocity = this.runtimeStatus.JumpForce;
-                    OnJumped(); // ジャンプトリガー
-                }
-
                 this.wasGrounded = true;
             }
             else
             {
                 this.wasGrounded = false;
 
-                // 空中は重力を加算
-                this.verticalVelocity += gravity * Time.deltaTime;
+                // 落下距離の計測用に最高到達点を記録
+                this.airborneTopY = Mathf.Max(this.airborneTopY, this.transform.position.y);
+
+                // 空中は重力を加算(上昇中と下降中で強さを切り替える)
+                var currentGravity = this.verticalVelocity > 0.0f
+                    ? this.gravityUp
+                    : this.gravityDown;
+                this.verticalVelocity += currentGravity * Time.deltaTime;
+
+                // 終端速度でクランプ
+                this.verticalVelocity = Mathf.Max(this.verticalVelocity, -this.maxFallSpeed);
+            }
+
+            // ジャンプ発火: バッファ(先行入力)とコヨーテ(崖離れ猶予)の両方が生きている時。
+            // 着地硬直中は受け付けない
+            if (this.jumpBufferTimer > 0.0f && this.coyoteTimer > 0.0f && !IsLandingStunned)
+            {
+                this.verticalVelocity = this.JumpVelocity;
+                this.canCutJump = true;
+                this.jumpBufferTimer = 0.0f;
+                this.coyoteTimer = 0.0f;
+                OnJumped(); // ジャンプトリガー
+            }
+
+            // 可変ジャンプ: 上昇中にボタンを離したら上昇を殺す(1回だけ)
+            if (this.canCutJump && this.verticalVelocity > 0.0f && !IsJumpHeld())
+            {
+                this.verticalVelocity *= this.jumpCutMultiplier;
+                this.canCutJump = false;
+            }
+            if (this.verticalVelocity <= 0.0f)
+            {
+                this.canCutJump = false;
             }
 
             if (this.animator != null)
             {
-                this.animator.SetBool("IsGrounded", this.characterController.isGrounded);
+                this.animator.SetBool("IsGrounded", isGrounded);
+                this.animator.SetFloat("VerticalVelocity", this.verticalVelocity);
             }
 
             yMove = this.verticalVelocity * Time.deltaTime;
