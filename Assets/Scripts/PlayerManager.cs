@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Rail
 {
-    public class PlayerManager : MonoBehaviour
+    public class PlayerManager : SingletonMonoBehaviour<PlayerManager>
     {
         [SerializeField]
         PlayerController playerPrefab = null;
@@ -15,27 +15,57 @@ namespace Rail
         [SerializeField]
         SplineFollowCamera followCamera = null;
 
+        [SerializeField]
+        int initialLives = 2;
+
         public IObservable<Unit> OnPlayerDeadObservable() => this.onPlayerDeadSubject;
         public IObservable<Unit> OnPlayerDiedObservable() => this.onPlayerDiedSubject;
+        public IObservable<PlayerController> OnPlayerSpawnedObservable() => this.onPlayerSpawnedSubject;
+        public IObservable<int> OnLivesChangedObservable() => this.onLivesChangedSubject;
+        public IObservable<Unit> OnGameOverObservable() => this.onGameOverSubject;
+        public PlayerController CurrentPlayer => this.playerController;
+        public int CurrentLives => this.currentLives;
 
         PlayerController playerController = null;
+        int currentLives = 0;
 
         CompositeDisposable disposables = new();
 
         Subject<Unit> onPlayerDeadSubject = new();
         Subject<Unit> onPlayerDiedSubject = new();
+        Subject<PlayerController> onPlayerSpawnedSubject = new();
+        Subject<int> onLivesChangedSubject = new();
+        Subject<Unit> onGameOverSubject = new();
 
-        void Awake()
+        protected override void Awake()
         {
+            base.Awake();
+            
             this.disposables.AddTo(this);
         }
 
         void Start()
         {
+            this.currentLives = this.initialLives;
+            this.onLivesChangedSubject.OnNext(this.currentLives);
             Spawn();
         }
 
-        public void Respawn()
+        public bool TryRespawn()
+        {
+            if (this.currentLives <= 0)
+            {
+                this.onGameOverSubject.OnNext(Unit.Default);
+                return false;
+            }
+
+            this.currentLives--;
+            this.onLivesChangedSubject.OnNext(this.currentLives);
+            Respawn();
+            return true;
+        }
+
+        void Respawn()
         {
             Delete();
             Spawn();
@@ -48,7 +78,7 @@ namespace Rail
                 this.spawnPoint.transform.position,
                 this.spawnPoint.transform.rotation);
 
-            this.playerController.Life.OnDeadObservable()
+            this.playerController.LifeProperty.OnDeadObservable()
                 .Subscribe(_ => this.onPlayerDeadSubject.OnNext(Unit.Default))
                 .AddTo(this.disposables);
 
@@ -56,8 +86,9 @@ namespace Rail
                 .Subscribe(_ => this.onPlayerDiedSubject.OnNext(Unit.Default))
                 .AddTo(this.disposables);
             
-            this.playerController.SetSpline(this.spawnPoint.SplineContainer);
+            this.playerController.SetSpline(this.spawnPoint.SplineContainer, this.spawnPoint.T);
             this.followCamera.SetTarget(this.playerController);
+            this.onPlayerSpawnedSubject.OnNext(this.playerController);
         }
 
         void Delete()

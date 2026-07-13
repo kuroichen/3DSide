@@ -31,6 +31,18 @@ namespace Rail
             if (this.hitCollider == null)
             {
                 Debug.LogWarning($"[CollisionObserver][{this.gameObject.name}]collision not found.");
+                return;
+            }
+
+            if (this.hitCollider.gameObject != this.gameObject)
+            {
+                var relay = this.hitCollider.GetComponent<CollisionObserverRelay>();
+                if (relay == null)
+                {
+                    relay = this.hitCollider.gameObject.AddComponent<CollisionObserverRelay>();
+                }
+
+                relay.Initialize(this);
             }
         }
 
@@ -48,14 +60,24 @@ namespace Rail
             }
         }
 
-        protected void OnTriggerEnter(Collider collider)
+        internal void NotifyTriggerEnter(Collider collider)
         {
             this.onTriggerEnterSubject.OnNext(collider);
         }
 
-        protected void OnCollisionEnter(Collision collision)
+        internal void NotifyCollisionEnter(Collision collision)
         {
             this.onCollisionEnterSubject.OnNext(collision);
+        }
+
+        protected void OnTriggerEnter(Collider collider)
+        {
+            NotifyTriggerEnter(collider);
+        }
+
+        protected void OnCollisionEnter(Collision collision)
+        {
+            NotifyCollisionEnter(collision);
         }
     }    
 }

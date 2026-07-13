@@ -29,6 +29,7 @@ namespace Rail
         {
             this.onSubLifeSubject.Dispose();
             this.onAddLifeSubject.Dispose();
+            this.onLifeChangedSubject.Dispose();
             this.onDeadSubject.Dispose();
         }
 
@@ -38,10 +39,12 @@ namespace Rail
         public int CurrentHp => this.hp;
 
         Subject<Unit> onDeadSubject = new();
+        Subject<int> onLifeChangedSubject = new();
         Subject<int> onAddLifeSubject = new();
         Subject<int> onSubLifeSubject = new();
 
         public IObservable<Unit> OnDeadObservable() => this.onDeadSubject;
+        public IObservable<int> OnLifeChangedObservable() => this.onLifeChangedSubject;
         public IObservable<int> OnAddLifeObservable() => this.onAddLifeSubject;
         public IObservable<int> OnSubLifeObservable() => this.onSubLifeSubject;
 
@@ -53,6 +56,7 @@ namespace Rail
             this.hp = Mathf.Max(0, this.CurrentHp - damage);
 
             this.onSubLifeSubject.OnNext(damage);
+            this.onLifeChangedSubject.OnNext(this.hp);
             
             if (this.hp <= 0)
             {
@@ -69,6 +73,7 @@ namespace Rail
             this.hp += healed;
 
             this.onAddLifeSubject.OnNext(healed);
+            this.onLifeChangedSubject.OnNext(this.hp);
         }
 
         #endregion
