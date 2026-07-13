@@ -31,43 +31,63 @@ namespace Rail
         public Vector3 Tangent { get; private set; }
 
         public SplineContainer Spline => this.splineContainer;
+        public SplineRail Rail => this.currentRail;
         public float T => this.t;
+        public float RailZ => this.railZ;
 
         // めり込み防止
         Vector3 previousPosition = Vector3.zero;
-        float previousT = 0.0f;
+        float previousRailZ = 0.0f;
 
         // 外力
         protected float impulseVelocityT = 0.0f;
+        protected SplineRail currentRail = null;
+        protected float railZ = 0.0f;
 
         // 子クラスoverride用
         protected virtual float Speed => this.speed;
 
-        protected virtual void Awake(){}
+        // 入力の効き(着地硬直などで一時的に入力を殺すために子クラスが上書きする)
+        protected virtual float InputScale => 1.0f;
+
+        protected virtual void Awake()
+        {
+            ResolveRail();
+            SetRailZFromT(this.t);
+            EvaluateRailPosition();
+        }
 
 
         protected virtual void Update()
         {
-            // 毎フレーム前のTを記録
-            previousT = this.t;
+            if (this.currentRail == null)
+            {
+                ResolveRail();
+                if (this.currentRail == null) return;
+            }
+
+            this.previousRailZ = this.railZ;
 
             // 入力を取得
-            var input = GetInput();
+            var input = GetInput() * InputScale;
 
-            // Splineの実際の長さを取得
-            float length = this.splineContainer.CalculateLength();
-
-            // 通常入力 + 外力を合算してtを進める
+            // 通常入力 + 外力を合算してレール距離を進める
             var totalInput = input + this.impulseVelocityT;
-            this.t += (totalInput * this.Speed / length) * Time.deltaTime;
-            this.t = Mathf.Clamp01(t);
+            this.railZ += totalInput * this.Speed * Time.deltaTime;
+
+            // 端の外へ余白の分だけはみ出せる(浮きレールから歩いて降りる→落下中に下のレールへ乗り換える)
+            this.railZ = Mathf.Clamp(
+                this.railZ,
+                -this.currentRail.EndMargin,
+                this.currentRail.Length + this.currentRail.EndMargin);
+            this.t = this.currentRail.RailZToT(this.railZ);
 
             // 外力を減衰
             this.impulseVelocityT = Mathf.Lerp(this.impulseVelocityT, 0.0f, this.impulseDecay * Time.deltaTime);
 
-            // t値からSpline上の接線(進行方向)を取得
-            this.Position = (Vector3)this.splineContainer.EvaluatePosition(t);
-            this.Tangent = (Vector3)this.splineContainer.EvaluateTangent(t);
+            EvaluateRailPosition();
+
+            TrySwitchNearestRail(input);
 
             // ゲート通過判定
             CheckGateCrossing();
@@ -82,9 +102,20 @@ namespace Rail
 
         public void RevertT()
         {
-            this.t = previousT;
-            this.Position = (Vector3)this.splineContainer.EvaluatePosition(this.t);
-            this.Tangent = (Vector3)this.splineContainer.EvaluateTangent(this.t);
+            this.railZ = this.previousRailZ;
+            this.t = this.currentRail.RailZToT(this.railZ);
+            EvaluateRailPosition();
+        }
+
+        public virtual void SetSpline(SplineContainer newSpline, float newT)
+        {
+            this.splineContainer = newSpline;
+            ResolveRail();
+            this.t = Mathf.Clamp01(newT);
+            SetRailZFromT(this.t);
+            EvaluateRailPosition();
+
+            NotifySplineDirectionChanged();
         }
 
         public void SwitchSpline(SplineContainer newSpline)
@@ -92,25 +123,87 @@ namespace Rail
             Debug.Log($"SwitchSpline: {newSpline.name}");
 
             this.splineContainer = newSpline;
+            ResolveRail();
 
-            // 現在位置から最近位置を取得
-            SplineUtility.GetNearestPoint(
-                this.splineContainer.Spline,
-                this.splineContainer.transform.InverseTransformPoint(
-                    this.transform.position),
-                out _,
-                out float nearestT);
+            var hit = this.currentRail != null
+                ? this.currentRail.World2Local(this.transform.position)
+                : null;
 
-            this.t = nearestT;
-            this.Position = (Vector3)this.splineContainer.EvaluatePosition(this.t);
-            this.Tangent = (Vector3)this.splineContainer.EvaluateTangent(this.t);
+            if (hit.HasValue)
+            {
+                this.railZ = Mathf.Clamp(
+                    hit.Value.z,
+                    -this.currentRail.EndMargin,
+                    this.currentRail.Length + this.currentRail.EndMargin);
+                this.t = this.currentRail.RailZToT(this.railZ);
+            }
+            else
+            {
+                SetRailZFromT(this.t);
+            }
 
-            // 接線のX成分でSplineの向きを判定してカメラに通知
-            var isRightward = this.Tangent.x >= 0;
-            OnSplineDirectionChanged?.Invoke(isRightward);
+            EvaluateRailPosition();
+            NotifySplineDirectionChanged();
         }
 
         protected virtual float GetInput() => 0.0f;
+
+        void ResolveRail()
+        {
+            if (this.splineContainer == null) return;
+
+            this.currentRail = this.splineContainer.GetComponent<SplineRail>();
+            if (this.currentRail == null)
+            {
+                this.currentRail = this.splineContainer.gameObject.AddComponent<SplineRail>();
+            }
+
+            RailManager.Instance.Add(this.currentRail);
+        }
+
+        void SetRailZFromT(float newT)
+        {
+            if (this.currentRail == null) return;
+
+            this.t = Mathf.Clamp01(newT);
+            this.railZ = this.currentRail.TToRailZ(this.t);
+        }
+
+        void EvaluateRailPosition()
+        {
+            if (this.currentRail == null) return;
+
+            this.Position = this.currentRail.Local2World(new Vector3(0.0f, 0.0f, this.railZ));
+            var tangent = this.currentRail.Rotation(this.railZ) * Vector3.forward;
+            tangent.y = 0.0f;
+            this.Tangent = tangent.sqrMagnitude > 0.0001f
+                ? tangent.normalized
+                : Vector3.forward;
+        }
+
+        void TrySwitchNearestRail(float input)
+        {
+            var hit = RailManager.Instance.World2Local(this.transform.position, this.currentRail, input);
+            if (!hit.HasValue || hit.Value.Rail == this.currentRail) return;
+
+            this.currentRail = hit.Value.Rail;
+            this.splineContainer = this.currentRail.SplineContainer;
+
+            // 余白の分は端の外も受け付ける(切替時の吸い付き=ワープを防ぐ)
+            this.railZ = Mathf.Clamp(
+                hit.Value.LocalPosition.z,
+                -this.currentRail.EndMargin,
+                this.currentRail.Length + this.currentRail.EndMargin);
+            this.t = this.currentRail.RailZToT(this.railZ);
+            EvaluateRailPosition();
+            NotifySplineDirectionChanged();
+        }
+
+        void NotifySplineDirectionChanged()
+        {
+            var isRightward = this.Tangent.x >= 0;
+            OnSplineDirectionChanged?.Invoke(isRightward);
+        }
 
         void CheckGateCrossing()
         {

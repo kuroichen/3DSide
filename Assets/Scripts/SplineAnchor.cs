@@ -20,12 +20,15 @@ namespace Rail
         [SerializeField]
         SplineAnchorDirection direction = SplineAnchorDirection.Forward;
 
+        [SerializeField, Range(0.0f, 1.0f)]
+        float t = 0.0f;
+
         public SplineContainer SplineContainer => this.splineContainer;
+        public float T => this.t;
 
         public Quaternion GetRotation()
         {
-            var t = GetNearestT();
-            var tangent = (Vector3)this.splineContainer.EvaluateTangent(t);
+            var tangent = (Vector3)this.splineContainer.EvaluateTangent(this.t);
             tangent.y = 0.0f;
             tangent.Normalize();
 
@@ -41,20 +44,16 @@ namespace Rail
             return Quaternion.LookRotation(forward);
         }
 
-        float GetNearestT()
+        Vector3 GetPosition()
         {
-            SplineUtility.GetNearestPoint(
-                this.splineContainer.Spline,
-                this.splineContainer.transform.InverseTransformPoint(this.transform.position),
-                out _,
-                out float t);
-            
-            return t;
+            return (Vector3)this.splineContainer.EvaluatePosition(this.t);
         }
 
         void OnValidate()
         {
             if (this.splineContainer == null) return;
+            this.t = Mathf.Clamp01(this.t);
+            this.transform.position = GetPosition();
             this.transform.rotation = GetRotation();
         }
     }

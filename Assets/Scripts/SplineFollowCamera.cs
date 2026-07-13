@@ -21,7 +21,7 @@ namespace Rail
             if (this.targetMover == null) return;
 
             // 接線の方向を取得
-            var tangent = this.targetMover.Spline.EvaluateTangent(this.targetMover.T);
+            var tangent = this.targetMover.Tangent;
 
             // 接線に対して垂直な方向を取得する
             // 道が曲がっていても「常に横から見る」を維持する
