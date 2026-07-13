@@ -50,6 +50,12 @@ namespace Rail
         // 入力の効き(着地硬直などで一時的に入力を殺すために子クラスが上書きする)
         protected virtual float InputScale => 1.0f;
 
+        // 空中かどうか(物理を持つ子クラスが上書きする)
+        protected virtual bool IsAirborne => false;
+
+        [SerializeField]
+        float airborneEndMargin = 5.0f; // 空中でのみ許すレール端外の距離(ジャンプで端を飛び越えるため)
+
         protected virtual void Awake()
         {
             ResolveRail();
@@ -75,11 +81,17 @@ namespace Rail
             var totalInput = input + this.impulseVelocityT;
             this.railZ += totalInput * this.Speed * Time.deltaTime;
 
-            // 端の外へ余白の分だけはみ出せる(浮きレールから歩いて降りる→落下中に下のレールへ乗り換える)
-            this.railZ = Mathf.Clamp(
-                this.railZ,
-                -this.currentRail.EndMargin,
-                this.currentRail.Length + this.currentRail.EndMargin);
+            // 端の外へ余白の分だけはみ出せる(浮きレールから歩いて降りる→落下中に下のレールへ乗り換える)。
+            // 空中は余白を大きく取り、ジャンプの弾道が端で止まらず飛び越えられるようにする。
+            // 自レールの担当範囲(EndMargin)を超えると名乗り出なくなるので、下のレールが自然に拾う。
+            // なお既に余白の外にいる場合は引き戻さない(端の角で接地/空中が切り替わるたびに
+            // railZが往復して移動と落下を繰り返す振動を防ぐ)
+            var margin = this.IsAirborne
+                ? this.airborneEndMargin
+                : this.currentRail.EndMargin;
+            var minZ = Mathf.Min(-margin, this.previousRailZ);
+            var maxZ = Mathf.Max(this.currentRail.Length + margin, this.previousRailZ);
+            this.railZ = Mathf.Clamp(this.railZ, minZ, maxZ);
             this.t = this.currentRail.RailZToT(this.railZ);
 
             // 外力を減衰

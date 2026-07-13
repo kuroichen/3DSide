@@ -59,6 +59,12 @@ namespace Rail
         [SerializeField]
         float hardLandStunTime = 0.25f; // 着地硬直の時間(秒)
 
+        [SerializeField]
+        float railCorrectionSpeed = 15.0f; // レール目標位置へ寄せる最大速度(乗り換え時のワープ・ガクつき対策)
+
+        [SerializeField]
+        float groundCheckDistance = 0.15f; // 足元からこの距離以内に地面があれば接地とみなす
+
         // パラメータ
         protected CharacterStatusRuntime runtimeStatus = null;
 
@@ -93,6 +99,10 @@ namespace Rail
 
         protected bool IsLandingStunned => this.landingStunTimer > 0.0f;
         protected override float InputScale => IsLandingStunned ? 0.0f : 1.0f;
+
+        // 直近の安定接地判定(CheckGrounded)の結果を使う。CC素のisGroundedだと
+        // 端の角で毎フレーム反転し、レール余白の伸縮が振動の原因になる
+        protected override bool IsAirborne => !this.wasGrounded;
 
         // 身長スケーリング有効時は導出値、無効時はステータスの値を使う
         protected float JumpVelocity => this.scaleJumpByHeight
@@ -135,6 +145,30 @@ namespace Rail
             ApplyToCharacterController();
 
             CheckFallDeath();
+        }
+
+        /// <summary>
+        /// 接地判定。
+        /// CharacterController.isGroundedはカプセルの縁が足場の角にかすっただけでtrueになり、
+        /// 端で毎フレーム反転してエッジハング(角に引っかかって降りられない)を起こす。
+        /// カプセル中心の直下に本当に地面があるかをSphereCastで併せて確認する。
+        /// </summary>
+        bool CheckGrounded()
+        {
+            if (!this.characterController.isGrounded) return false;
+
+            var origin = this.transform.position + this.characterController.center;
+            var radius = this.characterController.radius * 0.9f;
+            var castDistance = this.characterController.center.y - radius + this.groundCheckDistance;
+
+            return Physics.SphereCast(
+                origin,
+                radius,
+                Vector3.down,
+                out _,
+                castDistance,
+                Physics.DefaultRaycastLayers,
+                QueryTriggerInteraction.Ignore);
         }
 
         /// <summary>
@@ -222,6 +256,14 @@ namespace Rail
                 y: 0.0f,
                 z: this.Position.z - current.z);
 
+            // レール乗り換えなどで目標位置が飛んだ時、1フレームで吸い付かせず
+            // 上限速度で滑らかに寄せる(瞬間ワープ・接地フリッカーの防止)
+            var maxStep = this.railCorrectionSpeed * Time.deltaTime;
+            if (xzMove.magnitude > maxStep)
+            {
+                xzMove = xzMove.normalized * maxStep;
+            }
+
             ApplyGravityAndJump(out float yMove);
 
             // 移動前にCapsuleCastで先読み
@@ -257,7 +299,7 @@ namespace Rail
                 this.verticalVelocity = -1.0f;
             }
 
-            var isGrounded = this.characterController.isGrounded;
+            var isGrounded = CheckGrounded();
 
             // コヨーテタイム: 接地中は満タン、離れたら減っていく
             this.coyoteTimer = isGrounded
