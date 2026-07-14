@@ -81,7 +81,8 @@ namespace Rail.EditorTools
         /// </summary>
         public static GameObject LayCubes(
             SplineContainer container, float spacing, float width, float thickness,
-            bool tiltToSlope, Transform parent, IReadOnlyList<Vector2> holeRanges = null)
+            bool tiltToSlope, Transform parent, IReadOnlyList<Vector2> holeRanges = null,
+            Material material = null)
         {
             float length = container.CalculateLength();
             float sp = Mathf.Max(0.1f, spacing);
@@ -113,6 +114,10 @@ namespace Rail.EditorTools
 
                 var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 Undo.RegisterCreatedObjectUndo(cube, "Lay Cubes");
+                if (material != null)
+                {
+                    cube.GetComponent<MeshRenderer>().sharedMaterial = material;
+                }
                 cube.transform.SetParent(root.transform);
                 cube.transform.position = pos - Vector3.up * (thickness * 0.5f);
                 cube.transform.rotation = Quaternion.LookRotation(forward, Vector3.up);

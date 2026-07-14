@@ -97,6 +97,10 @@ namespace Rail.EditorTools
             var root = GameObject.Find("GeneratedStage");
             var parent = root != null ? root.transform : null;
 
+            // --- テーマ(見た目)を用意 ---
+            var theme = ThemeSetupTool.EnsureDefaultTheme();
+            var roadMaterial = theme != null ? theme.roadMaterial : null;
+
             // --- 道を敷く(幅・厚みはジャンプ性能のスケール感に合わせる) ---
             // メイン道: ①の穴 + ③の飛び石の間に穴を開ける(railZ範囲)
             var mainHoles = new[]
@@ -109,16 +113,37 @@ namespace Rail.EditorTools
                 new Vector2(101.0f, 105.0f),  // ③ 下り4m
                 new Vector2(110.0f, 114.0f),  // ③ 下り4m
             };
-            var mainRoad = StageGeometryUtility.LayCubes(main, 2.0f, 6.0f, 0.8f, true, parent, mainHoles);
+            var mainRoad = StageGeometryUtility.LayCubes(
+                main, 2.0f, 6.0f, 0.8f, true, parent, mainHoles, roadMaterial);
             Undo.AddComponent<GeneratedStageContent>(mainRoad);
 
             // 2段目・3段目: 通常コリジョンの道(すり抜けは不使用。乗り口は互い違い配置で
             // 下の層の歩行帯に被さらないため、頭上の引っかかりは起きない)
-            var middleRoad = StageGeometryUtility.LayCubes(middle, 2.0f, 6.0f, 0.8f, true, parent);
+            var middleRoad = StageGeometryUtility.LayCubes(
+                middle, 2.0f, 6.0f, 0.8f, true, parent, null, roadMaterial);
             Undo.AddComponent<GeneratedStageContent>(middleRoad);
 
-            var topRoad = StageGeometryUtility.LayCubes(top, 2.0f, 6.0f, 0.8f, true, parent);
+            var topRoad = StageGeometryUtility.LayCubes(
+                top, 2.0f, 6.0f, 0.8f, true, parent, null, roadMaterial);
             Undo.AddComponent<GeneratedStageContent>(topRoad);
+
+            // --- テーマ適用(散布と環境) ---
+            // 散布は道のコライダーに足場を求めるため、道の生成後に行う
+            if (theme != null)
+            {
+                Physics.SyncTransforms();
+
+                var mainDeco = StageDecorator.Scatter(main, theme, parent);
+                Undo.AddComponent<GeneratedStageContent>(mainDeco);
+
+                var middleDeco = StageDecorator.Scatter(middle, theme, parent);
+                Undo.AddComponent<GeneratedStageContent>(middleDeco);
+
+                var topDeco = StageDecorator.Scatter(top, theme, parent);
+                Undo.AddComponent<GeneratedStageContent>(topDeco);
+
+                StageDecorator.ApplyEnvironment(theme);
+            }
 
             // カメラはジャンプの放物線全体が見える距離まで引く
             var followCamera = Camera.main != null
