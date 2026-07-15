@@ -11,7 +11,7 @@ namespace Rail.EditorTools
     /// </summary>
     public static class ThemeSetupTool
     {
-        const int BuilderVersion = 5; // 見た目の構成を変えたらインクリメント
+        const int BuilderVersion = 6; // 見た目の構成を変えたらインクリメント
 
         const string ThemeFolder = "Assets/Design/Themes";
         const string ThemePath = ThemeFolder + "/Theme_GreenHills.asset";
@@ -225,22 +225,32 @@ namespace Rail.EditorTools
                 profile.components.Clear();
             }
 
-            var tonemapping = profile.Add<UnityEngine.Rendering.Universal.Tonemapping>(true);
+            // 注意: Add<T>(true)は全パラメータのoverrideを有効化してしまい、
+            // TonemappingのHDRディスプレイ出力設定(paperWhite等)まで強制して
+            // 画面が真っ白に飛ぶ環境がある。意図したパラメータだけoverrideする
+            var tonemapping = profile.Add<UnityEngine.Rendering.Universal.Tonemapping>(false);
+            tonemapping.mode.overrideState = true;
             tonemapping.mode.value = UnityEngine.Rendering.Universal.TonemappingMode.ACES;
             AssetDatabase.AddObjectToAsset(tonemapping, profile);
 
-            var bloom = profile.Add<UnityEngine.Rendering.Universal.Bloom>(true);
+            var bloom = profile.Add<UnityEngine.Rendering.Universal.Bloom>(false);
+            bloom.intensity.overrideState = true;
             bloom.intensity.value = 0.35f;
+            bloom.threshold.overrideState = true;
             bloom.threshold.value = 1.1f;
             AssetDatabase.AddObjectToAsset(bloom, profile);
 
-            var colorAdjustments = profile.Add<UnityEngine.Rendering.Universal.ColorAdjustments>(true);
+            var colorAdjustments = profile.Add<UnityEngine.Rendering.Universal.ColorAdjustments>(false);
+            colorAdjustments.postExposure.overrideState = true;
             colorAdjustments.postExposure.value = 0.25f;
+            colorAdjustments.saturation.overrideState = true;
             colorAdjustments.saturation.value = 12.0f;
+            colorAdjustments.contrast.overrideState = true;
             colorAdjustments.contrast.value = 8.0f;
             AssetDatabase.AddObjectToAsset(colorAdjustments, profile);
 
-            var vignette = profile.Add<UnityEngine.Rendering.Universal.Vignette>(true);
+            var vignette = profile.Add<UnityEngine.Rendering.Universal.Vignette>(false);
+            vignette.intensity.overrideState = true;
             vignette.intensity.value = 0.18f;
             AssetDatabase.AddObjectToAsset(vignette, profile);
 
