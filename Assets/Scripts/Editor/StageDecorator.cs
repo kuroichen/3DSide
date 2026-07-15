@@ -85,8 +85,34 @@ namespace Rail.EditorTools
             instance.transform.SetParent(parent);
             instance.transform.position = position;
             instance.transform.rotation = Quaternion.Euler(0.0f, (float)random.NextDouble() * 360.0f, 0.0f);
-            instance.transform.localScale = Vector3.one
-                * Mathf.Lerp(entry.minScale, entry.maxScale, (float)random.NextDouble());
+
+            if (entry.targetHeightMax > 0.0f)
+            {
+                // 実寸指定: モデルの実サイズを測って目標の高さ(m)に正規化する。
+                // プレハブ自体の初期スケールを保つため、上書きでなく倍率を掛ける
+                var targetHeight = Mathf.Lerp(entry.targetHeightMin, entry.targetHeightMax, (float)random.NextDouble());
+                instance.transform.localScale *= targetHeight / MeasureHeight(instance);
+            }
+            else
+            {
+                instance.transform.localScale *= Mathf.Lerp(entry.minScale, entry.maxScale, (float)random.NextDouble());
+            }
+        }
+
+        /// <summary>
+        /// インスタンスの見た目の高さ(m)を測る。
+        /// </summary>
+        static float MeasureHeight(GameObject instance)
+        {
+            var renderers = instance.GetComponentsInChildren<Renderer>();
+            if (renderers.Length == 0) return 1.0f;
+
+            var bounds = renderers[0].bounds;
+            foreach (var renderer in renderers)
+            {
+                bounds.Encapsulate(renderer.bounds);
+            }
+            return Mathf.Max(0.05f, bounds.size.y);
         }
 
         /// <summary>
@@ -118,18 +144,18 @@ namespace Rail.EditorTools
                 // 奥側(カメラの反対=+z側)に置く
                 var farSign = right.z >= 0.0f ? 1.0f : -1.0f;
 
-                // 近景の丘(緑)
+                // 近景の丘(緑): 実寸8〜16m
                 PlaceSilhouette(theme, random, root.transform, center,
                     right * (farSign * (22.0f + (float)random.NextDouble() * 12.0f)),
-                    6.0f + (float)random.NextDouble() * 6.0f,
+                    8.0f + (float)random.NextDouble() * 8.0f,
                     theme.nearHillMaterial);
 
-                // 遠景の山(青灰)は1つおきに
+                // 遠景の山(青灰)は1つおきに: 実寸20〜40m
                 if (random.Next(2) == 0)
                 {
                     PlaceSilhouette(theme, random, root.transform, center,
                         right * (farSign * (45.0f + (float)random.NextDouble() * 40.0f)),
-                        16.0f + (float)random.NextDouble() * 16.0f,
+                        20.0f + (float)random.NextDouble() * 20.0f,
                         theme.farMountainMaterial);
                 }
             }
@@ -152,7 +178,7 @@ namespace Rail.EditorTools
 
         static void PlaceSilhouette(
             StageTheme theme, System.Random random, Transform parent,
-            Vector3 center, Vector3 offset, float scale, Material material)
+            Vector3 center, Vector3 offset, float targetHeight, Material material)
         {
             var prefab = theme.horizonPrefabs[random.Next(theme.horizonPrefabs.Length)];
             if (prefab == null) return;
@@ -162,11 +188,14 @@ namespace Rail.EditorTools
 
             Undo.RegisterCreatedObjectUndo(instance, "Generate Horizon");
             instance.transform.SetParent(parent);
-            var position = center + offset;
-            position.y = center.y - 2.0f; // 少し沈めて根元を隠す
-            instance.transform.position = position;
             instance.transform.rotation = Quaternion.Euler(0.0f, (float)random.NextDouble() * 360.0f, 0.0f);
-            instance.transform.localScale = Vector3.one * scale;
+
+            // 実寸(m)指定でスケール(元アセットのサイズに依存しない)
+            instance.transform.localScale *= targetHeight / MeasureHeight(instance);
+
+            var position = center + offset;
+            position.y = center.y - targetHeight * 0.15f; // 少し沈めて根元を隠す
+            instance.transform.position = position;
 
             // シルエット用の単色マテリアルに差し替え、コライダーは外す
             if (material != null)

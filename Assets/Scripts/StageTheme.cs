@@ -29,6 +29,12 @@ namespace Rail
             public float minScale = 0.8f;
             public float maxScale = 1.3f;
             public ScatterSide side = ScatterSide.BothSides;
+
+            // 実寸指定(m)。0より大きい場合はminScale/maxScaleの代わりに、
+            // モデルの実サイズを測ってこの高さになるよう正規化する
+            // (アセットパックごとの元サイズの違いに影響されない)
+            public float targetHeightMin = 0.0f;
+            public float targetHeightMax = 0.0f;
         }
 
         [Header("道")]

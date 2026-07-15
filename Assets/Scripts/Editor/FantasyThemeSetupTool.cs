@@ -12,7 +12,7 @@ namespace Rail.EditorTools
     /// </summary>
     public static class FantasyThemeSetupTool
     {
-        const int BuilderVersion = 1;
+        const int BuilderVersion = 2;
 
         const string RequestMarkerPath = "Library/import_fantasy_theme";
         const string PackagePath =
@@ -49,6 +49,7 @@ namespace Rail.EditorTools
         static void RunStep()
         {
             ConvertMaterialsToUrp();
+            FixRemainingMaterials();
             BuildTheme();
 
             Debug.Log($"[FantasyThemeSetupTool] テーマを構築しました: {ThemePath}");
@@ -76,6 +77,57 @@ namespace Rail.EditorTools
             catch (System.Exception e)
             {
                 Debug.LogWarning($"[FantasyThemeSetupTool] URP変換に失敗(手動で Window > Rendering > Render Pipeline Converter を実行してください): {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// URP変換ツールが取りこぼしたマテリアル(マゼンタ表示)を手動でURP Litへ変換する。
+        /// テクスチャと色を引き継ぎ、葉などのカットアウトはアルファクリップを有効化する。
+        /// </summary>
+        static void FixRemainingMaterials()
+        {
+            var fixedCount = 0;
+            var guids = AssetDatabase.FindAssets("t:Material", new[] { PackRoot });
+
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (material == null || material.shader == null) continue;
+
+                var shaderName = material.shader.name;
+                if (shaderName.StartsWith("Universal Render Pipeline")) continue;
+
+                var mainTexture = material.HasProperty("_MainTex") ? material.GetTexture("_MainTex") : null;
+                var color = material.HasProperty("_Color") ? material.GetColor("_Color") : Color.white;
+                var needsCutout = shaderName.Contains("Cutout")
+                    || shaderName.Contains("Leaves")
+                    || shaderName.Contains("Leaf")
+                    || shaderName.Contains("TreeSoft");
+
+                material.shader = Shader.Find("Universal Render Pipeline/Lit");
+                if (mainTexture != null)
+                {
+                    material.SetTexture("_BaseMap", mainTexture);
+                }
+                material.SetColor("_BaseColor", color);
+                material.SetFloat("_Smoothness", 0.05f);
+
+                if (needsCutout)
+                {
+                    material.SetFloat("_AlphaClip", 1.0f);
+                    material.SetFloat("_Cutoff", 0.5f);
+                    material.EnableKeyword("_ALPHATEST_ON");
+                }
+
+                EditorUtility.SetDirty(material);
+                fixedCount++;
+            }
+
+            if (fixedCount > 0)
+            {
+                AssetDatabase.SaveAssets();
+                Debug.Log($"[FantasyThemeSetupTool] 変換漏れマテリアルを{fixedCount}件、手動でURPへ変換しました");
             }
         }
 
@@ -117,6 +169,7 @@ namespace Rail.EditorTools
             theme.sunEuler = new Vector3(45.0f, -35.0f, 0.0f);
             theme.seed = 20260716;
 
+            // サイズはすべて実寸(m)指定。アセットの元サイズに影響されない
             theme.scatter = new List<StageTheme.ScatterEntry>
             {
                 new StageTheme.ScatterEntry
@@ -126,8 +179,8 @@ namespace Rail.EditorTools
                     densityPer10m = 6.0f,
                     minSideOffset = 2.5f,
                     maxSideOffset = 14.0f,
-                    minScale = 0.9f,
-                    maxScale = 1.6f,
+                    targetHeightMin = 0.3f,
+                    targetHeightMax = 0.7f,
                     side = StageTheme.ScatterSide.BothSides,
                 },
                 new StageTheme.ScatterEntry
@@ -137,8 +190,8 @@ namespace Rail.EditorTools
                     densityPer10m = 2.5f,
                     minSideOffset = 3.0f,
                     maxSideOffset = 12.0f,
-                    minScale = 0.9f,
-                    maxScale = 1.4f,
+                    targetHeightMin = 0.3f,
+                    targetHeightMax = 0.6f,
                     side = StageTheme.ScatterSide.BothSides,
                 },
                 new StageTheme.ScatterEntry
@@ -148,8 +201,8 @@ namespace Rail.EditorTools
                     densityPer10m = 1.2f,
                     minSideOffset = 4.0f,
                     maxSideOffset = 14.0f,
-                    minScale = 0.9f,
-                    maxScale = 1.5f,
+                    targetHeightMin = 0.8f,
+                    targetHeightMax = 1.6f,
                     side = StageTheme.ScatterSide.BothSides,
                 },
                 new StageTheme.ScatterEntry
@@ -159,8 +212,8 @@ namespace Rail.EditorTools
                     densityPer10m = 0.6f,
                     minSideOffset = 4.0f,
                     maxSideOffset = 16.0f,
-                    minScale = 0.8f,
-                    maxScale = 1.5f,
+                    targetHeightMin = 0.6f,
+                    targetHeightMax = 1.5f,
                     side = StageTheme.ScatterSide.BothSides,
                 },
                 new StageTheme.ScatterEntry
@@ -170,10 +223,10 @@ namespace Rail.EditorTools
                         "Oak_tree1", "Oak_tree2", "Birch_tree1", "Birch_tree2",
                         "Deciduous_tree1", "Deciduous_tree2"),
                     densityPer10m = 1.0f,
-                    minSideOffset = 6.0f,
+                    minSideOffset = 8.0f,
                     maxSideOffset = 20.0f,
-                    minScale = 0.8f,
-                    maxScale = 1.3f,
+                    targetHeightMin = 5.0f,
+                    targetHeightMax = 9.0f,
                     side = StageTheme.ScatterSide.FarSide,
                 },
                 new StageTheme.ScatterEntry
@@ -183,8 +236,8 @@ namespace Rail.EditorTools
                     densityPer10m = 0.4f,
                     minSideOffset = 3.0f,
                     maxSideOffset = 10.0f,
-                    minScale = 0.9f,
-                    maxScale = 1.4f,
+                    targetHeightMin = 0.3f,
+                    targetHeightMax = 0.7f,
                     side = StageTheme.ScatterSide.BothSides,
                 },
             };
@@ -253,9 +306,39 @@ namespace Rail.EditorTools
         [InitializeOnLoadMethod]
         static void RunIfRequested()
         {
-            if (!File.Exists(RequestMarkerPath)) return;
+            // マーカーがある(初回導入)か、テーマが古い(ツール更新)場合に実行
+            EditorApplication.update += CheckOnce;
+        }
 
-            EditorApplication.update += RunOnce;
+        static void CheckOnce()
+        {
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+
+            EditorApplication.update -= CheckOnce;
+
+            if (File.Exists(RequestMarkerPath))
+            {
+                EditorApplication.update += RunOnce;
+                return;
+            }
+
+            // パック導入済みでテーマだけ古い場合は作り直して再生成
+            if (AssetDatabase.IsValidFolder(PackRoot))
+            {
+                var theme = AssetDatabase.LoadAssetAtPath<StageTheme>(ThemePath);
+                if (theme != null && theme.builderVersion < BuilderVersion)
+                {
+                    Debug.Log($"[FantasyThemeSetupTool] テーマをv{BuilderVersion}へ更新します");
+                    try
+                    {
+                        RunStep();
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogException(e);
+                    }
+                }
+            }
         }
 
         static void RunOnce()
