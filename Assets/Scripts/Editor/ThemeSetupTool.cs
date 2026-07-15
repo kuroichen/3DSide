@@ -11,7 +11,7 @@ namespace Rail.EditorTools
     /// </summary>
     public static class ThemeSetupTool
     {
-        const int BuilderVersion = 3; // 見た目の構成を変えたらインクリメント
+        const int BuilderVersion = 4; // 見た目の構成を変えたらインクリメント
 
         const string ThemeFolder = "Assets/Design/Themes";
         const string ThemePath = ThemeFolder + "/Theme_GreenHills.asset";
@@ -64,14 +64,14 @@ namespace Rail.EditorTools
             theme.builderVersion = BuilderVersion;
 
             // フラットカラーで統一(グリッドはデバッグ感の元なので使わない)。
-            // 色はKenney素材のミント寄りの緑と喧嘩しないパレットに揃える
-            theme.roadMaterial = EnsureColorMaterial("Mat_Road_GreenHills", new Color(0.70f, 0.54f, 0.36f));   // 土の小道
-            theme.groundMaterial = EnsureColorMaterial("Mat_Ground_GreenHills", new Color(0.50f, 0.70f, 0.40f)); // 草原
-            theme.cliffMaterial = EnsureColorMaterial("Mat_Cliff_GreenHills", new Color(0.48f, 0.38f, 0.28f));  // 崖壁(土の断面)
-            theme.nearHillMaterial = EnsureColorMaterial("Mat_Hill_GreenHills", new Color(0.40f, 0.58f, 0.40f));  // 近景の丘
-            theme.farMountainMaterial = EnsureColorMaterial("Mat_Mountain_GreenHills", new Color(0.58f, 0.62f, 0.72f)); // 遠景の山
-            // 谷底はライティングの影響を受けないUnlitで本当に暗くする
-            theme.abyssMaterial = EnsureUnlitMaterial("Mat_Abyss_GreenHills", new Color(0.03f, 0.035f, 0.05f));
+            // Kenney植生のミント緑に歩み寄った「パステル草原」パレット
+            theme.roadMaterial = EnsureColorMaterial("Mat_Road_GreenHills", new Color(0.72f, 0.56f, 0.38f));   // 土の小道
+            theme.groundMaterial = EnsureColorMaterial("Mat_Ground_GreenHills", new Color(0.47f, 0.67f, 0.45f)); // 草原(ミント寄り)
+            theme.cliffMaterial = EnsureColorMaterial("Mat_Cliff_GreenHills", new Color(0.46f, 0.37f, 0.28f));  // 崖壁(土の断面)
+            theme.nearHillMaterial = EnsureColorMaterial("Mat_Hill_GreenHills", new Color(0.36f, 0.54f, 0.42f));  // 近景の丘
+            theme.farMountainMaterial = EnsureColorMaterial("Mat_Mountain_GreenHills", new Color(0.55f, 0.58f, 0.68f)); // 遠景の山
+            // 谷底はUnlitで暗く。ただし漆黒は世界から浮くので暗い青灰に留める
+            theme.abyssMaterial = EnsureUnlitMaterial("Mat_Abyss_GreenHills", new Color(0.07f, 0.09f, 0.13f));
 
             theme.generateGround = true;
             theme.groundWidth = 60.0f;
@@ -85,7 +85,7 @@ namespace Rail.EditorTools
 
             theme.skyboxMaterial = EnsureSkyboxMaterial();
             theme.enableFog = true;
-            theme.fogColor = new Color(0.70f, 0.78f, 0.90f);
+            theme.fogColor = new Color(0.82f, 0.88f, 0.95f); // 地平線色と合わせて世界の果てを溶かす
             theme.fogDensity = 0.007f;
             theme.sunColor = new Color(1.0f, 0.96f, 0.88f);
             theme.sunEuler = new Vector3(45.0f, -35.0f, 0.0f);
@@ -231,17 +231,29 @@ namespace Rail.EditorTools
             var path = $"{ThemeFolder}/Mat_Skybox_GreenHills.mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
 
-            if (material == null)
+            // 内蔵Procedural Skyboxは地平線が勝手に暖色へ転ぶため、
+            // 色を完全指定できる自前のグラデーションシェーダーを使う
+            var shader = Shader.Find("Rail/SkyboxGradient");
+            if (shader == null)
             {
-                material = new Material(Shader.Find("Skybox/Procedural"));
-                AssetDatabase.CreateAsset(material, path);
+                Debug.LogWarning("[ThemeSetupTool] Rail/SkyboxGradientが見つかりません。Proceduralで代用します。");
+                shader = Shader.Find("Skybox/Procedural");
             }
 
-            // 地平線が黄緑に転ぶのを防ぐ: 大気は標準の厚み、地面色は彩度低め
-            material.SetColor("_SkyTint", new Color(0.45f, 0.65f, 0.90f));
-            material.SetColor("_GroundColor", new Color(0.47f, 0.50f, 0.47f));
-            material.SetFloat("_Exposure", 1.15f);
-            material.SetFloat("_AtmosphereThickness", 1.0f);
+            if (material == null)
+            {
+                material = new Material(shader);
+                AssetDatabase.CreateAsset(material, path);
+            }
+            else if (material.shader != shader)
+            {
+                material.shader = shader;
+            }
+
+            material.SetColor("_TopColor", new Color(0.36f, 0.58f, 0.88f));      // 天頂の青
+            material.SetColor("_HorizonColor", new Color(0.85f, 0.90f, 0.96f));  // 地平線の白青
+            material.SetColor("_BottomColor", new Color(0.42f, 0.46f, 0.44f));   // 下方の灰緑
+            material.SetFloat("_HorizonSharpness", 2.5f);
             EditorUtility.SetDirty(material);
 
             return material;
