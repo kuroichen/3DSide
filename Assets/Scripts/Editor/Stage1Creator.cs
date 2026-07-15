@@ -135,7 +135,8 @@ namespace Rail.EditorTools
                 {
                     var groundHoles = PadHoles(mainHoles, theme.groundHolePadding);
                     var ground = StageGeometryUtility.GenerateGroundRibbon(
-                        main, theme.groundWidth, -0.35f, groundHoles, theme.groundMaterial, parent);
+                        main, theme.groundWidth, -0.35f, groundHoles, theme.groundMaterial, parent,
+                        theme.cliffMaterial, theme.cliffDepth);
                     Undo.AddComponent<GeneratedStageContent>(ground);
                 }
 

@@ -37,8 +37,10 @@ namespace Rail
         [Header("地面(メインルート沿いに広がる大地)")]
         public bool generateGround = true;
         public Material groundMaterial = null;
+        public Material cliffMaterial = null;  // 地面の縁・谷の断面に垂らす崖壁
         public float groundWidth = 60.0f;
         public float groundHolePadding = 1.5f; // 道の穴より広めに地面を裂いて「谷」にする
+        public float cliffDepth = 14.0f;       // 崖壁の深さ
 
         [Header("遠景(丘と山のシルエット)")]
         public bool generateHorizon = true;

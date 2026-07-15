@@ -201,6 +201,13 @@ namespace Rail.EditorTools
             RenderSettings.fogColor = theme.fogColor;
             RenderSettings.fogDensity = theme.fogDensity;
 
+            // アンビエントを三色制御にして色被り(青被り・黄被り)を抑える
+            // 空=青白 / 水平=中間 / 地面の照り返し=暖色
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.62f, 0.72f, 0.85f);
+            RenderSettings.ambientEquatorColor = new Color(0.55f, 0.58f, 0.56f);
+            RenderSettings.ambientGroundColor = new Color(0.38f, 0.33f, 0.27f);
+
             Light sun = null;
             foreach (var light in Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude))
             {

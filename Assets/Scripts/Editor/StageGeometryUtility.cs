@@ -134,7 +134,8 @@ namespace Rail.EditorTools
         /// </summary>
         public static GameObject GenerateGroundRibbon(
             SplineContainer container, float width, float yOffset,
-            IReadOnlyList<Vector2> holeRanges, Material material, Transform parent)
+            IReadOnlyList<Vector2> holeRanges, Material material, Transform parent,
+            Material cliffMaterial = null, float cliffDepth = 14.0f)
         {
             float length = container.CalculateLength();
             int n = Mathf.Max(8, Mathf.CeilToInt(length / 2.0f));
@@ -195,6 +196,69 @@ namespace Rail.EditorTools
             var renderer = go.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = material != null ? material : CreateDefaultMaterial();
             go.AddComponent<MeshCollider>().sharedMesh = mesh;
+
+            // 崖壁(スカート): 地面の縁と谷の断面に壁を垂らし、「厚みのある大地」に見せる
+            if (cliffMaterial != null)
+            {
+                var skirt = BuildGroundSkirt(verts, n, length, holeRanges, cliffDepth, cliffMaterial);
+                skirt.transform.SetParent(go.transform, true);
+            }
+
+            return go;
+        }
+
+        /// <summary>
+        /// 地面リボンの外縁(左右)と谷の切断面に垂直の壁を張る。
+        /// </summary>
+        static GameObject BuildGroundSkirt(
+            Vector3[] ribbonVerts, int n, float length,
+            IReadOnlyList<Vector2> holeRanges, float depth, Material material)
+        {
+            var verts = new List<Vector3>();
+            var tris = new List<int>();
+
+            void AddQuad(Vector3 topA, Vector3 topB)
+            {
+                var baseIndex = verts.Count;
+                verts.Add(topA);
+                verts.Add(topB);
+                verts.Add(topA + Vector3.down * depth);
+                verts.Add(topB + Vector3.down * depth);
+                // 両面張り(内側からも外側からも見えるように)
+                tris.AddRange(new[] { baseIndex, baseIndex + 1, baseIndex + 2, baseIndex + 1, baseIndex + 3, baseIndex + 2 });
+                tris.AddRange(new[] { baseIndex, baseIndex + 2, baseIndex + 1, baseIndex + 1, baseIndex + 2, baseIndex + 3 });
+            }
+
+            // 左右の外縁の壁(谷の区間も途切れず続ける=峡谷の外壁)
+            for (var i = 0; i < n; i++)
+            {
+                AddQuad(ribbonVerts[i * 2], ribbonVerts[(i + 1) * 2]);
+                AddQuad(ribbonVerts[i * 2 + 1], ribbonVerts[(i + 1) * 2 + 1]);
+            }
+
+            // 谷の切断面(進行方向に対して横向きの壁)
+            if (holeRanges != null)
+            {
+                foreach (var hole in holeRanges)
+                {
+                    var startRow = Mathf.Clamp(Mathf.RoundToInt(hole.x / length * n), 0, n);
+                    var endRow = Mathf.Clamp(Mathf.RoundToInt(hole.y / length * n), 0, n);
+                    AddQuad(ribbonVerts[startRow * 2], ribbonVerts[startRow * 2 + 1]);
+                    AddQuad(ribbonVerts[endRow * 2], ribbonVerts[endRow * 2 + 1]);
+                }
+            }
+
+            var mesh = new Mesh { name = "GroundSkirtMesh" };
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            mesh.vertices = verts.ToArray();
+            mesh.triangles = tris.ToArray();
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            var go = new GameObject("GroundSkirt");
+            Undo.RegisterCreatedObjectUndo(go, "Generate Ground");
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            go.AddComponent<MeshRenderer>().sharedMaterial = material;
 
             return go;
         }
