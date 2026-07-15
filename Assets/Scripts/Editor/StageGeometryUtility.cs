@@ -217,16 +217,25 @@ namespace Rail.EditorTools
             var verts = new List<Vector3>();
             var tris = new List<int>();
 
-            void AddQuad(Vector3 topA, Vector3 topB)
+            void AddFace(Vector3 a, Vector3 b, Vector3 c, Vector3 d)
             {
                 var baseIndex = verts.Count;
-                verts.Add(topA);
-                verts.Add(topB);
-                verts.Add(topA + Vector3.down * depth);
-                verts.Add(topB + Vector3.down * depth);
-                // 両面張り(内側からも外側からも見えるように)
+                verts.Add(a);
+                verts.Add(b);
+                verts.Add(c);
+                verts.Add(d);
                 tris.AddRange(new[] { baseIndex, baseIndex + 1, baseIndex + 2, baseIndex + 1, baseIndex + 3, baseIndex + 2 });
-                tris.AddRange(new[] { baseIndex, baseIndex + 2, baseIndex + 1, baseIndex + 1, baseIndex + 2, baseIndex + 3 });
+            }
+
+            void AddQuad(Vector3 topA, Vector3 topB)
+            {
+                var bottomA = topA + Vector3.down * depth;
+                var bottomB = topB + Vector3.down * depth;
+
+                // 両面張り。ただし表裏で頂点を共有すると法線が打ち消し合ってゼロになり、
+                // シェーダーのnormalize(0)がNaN→Bloomで画面が白飛びする。面ごとに頂点を複製する
+                AddFace(topA, topB, bottomA, bottomB);
+                AddFace(topB, topA, bottomB, bottomA);
             }
 
             // 左右の外縁の壁(谷の区間も途切れず続ける=峡谷の外壁)
