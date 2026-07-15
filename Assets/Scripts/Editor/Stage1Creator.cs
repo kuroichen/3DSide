@@ -98,7 +98,12 @@ namespace Rail.EditorTools
             var parent = root != null ? root.transform : null;
 
             // --- テーマ(見た目)を用意 ---
-            var theme = ThemeSetupTool.EnsureDefaultTheme();
+            // FantasyForest(所有アセット製)があれば優先、無ければ既定の緑の丘
+            var theme = FantasyThemeSetupTool.TryLoadTheme();
+            if (theme == null)
+            {
+                theme = ThemeSetupTool.EnsureDefaultTheme();
+            }
             var roadMaterial = theme != null ? theme.roadMaterial : null;
 
             // --- 道を敷く(幅・厚みはジャンプ性能のスケール感に合わせる) ---

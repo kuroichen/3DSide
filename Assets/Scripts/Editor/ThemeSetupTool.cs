@@ -180,7 +180,7 @@ namespace Rail.EditorTools
         /// <summary>
         /// 単色マテリアルを取得または作成する(既存なら色だけ更新)。
         /// </summary>
-        static Material EnsureColorMaterial(string name, Color color)
+        internal static Material EnsureColorMaterial(string name, Color color)
         {
             var path = $"{ThemeFolder}/{name}.mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -205,7 +205,7 @@ namespace Rail.EditorTools
         /// 絵作り用のポストプロセスプロファイルを取得または作り直す。
         /// ACESトーンマップ+控えめなBloom+彩度/コントラスト補正+ビネット。
         /// </summary>
-        static UnityEngine.Rendering.VolumeProfile EnsureVolumeProfile()
+        internal static UnityEngine.Rendering.VolumeProfile EnsureVolumeProfile()
         {
             var path = $"{ThemeFolder}/PostProcess_GreenHills.asset";
             var profile = AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.VolumeProfile>(path);
@@ -261,7 +261,7 @@ namespace Rail.EditorTools
         /// <summary>
         /// ライティングを受けないUnlit単色マテリアル(谷底など「本当に暗い」表現用)。
         /// </summary>
-        static Material EnsureUnlitMaterial(string name, Color color)
+        internal static Material EnsureUnlitMaterial(string name, Color color)
         {
             var path = $"{ThemeFolder}/{name}.mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -284,7 +284,7 @@ namespace Rail.EditorTools
             return material;
         }
 
-        static Material EnsureSkyboxMaterial()
+        internal static Material EnsureSkyboxMaterial()
         {
             var path = $"{ThemeFolder}/Mat_Skybox_GreenHills.mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
