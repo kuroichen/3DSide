@@ -89,6 +89,104 @@ namespace Rail.EditorTools
         }
 
         /// <summary>
+        /// 遠景(近景の丘・遠景の山・谷底の暗い床)を生成する。
+        /// 岩モデルを巨大化しフォグに溶かして山のシルエットにする。
+        /// </summary>
+        public static GameObject GenerateHorizon(SplineContainer container, StageTheme theme, Transform parent)
+        {
+            var root = new GameObject($"Horizon_{container.name}");
+            Undo.RegisterCreatedObjectUndo(root, "Generate Horizon");
+            if (parent != null) root.transform.SetParent(parent, true);
+
+            if (theme.horizonPrefabs == null || theme.horizonPrefabs.Length == 0) return root;
+
+            var random = new System.Random(theme.seed ^ 0x5A5A);
+            var length = container.CalculateLength();
+
+            // ステージの端の外まで並べて「世界の続き」を見せる
+            for (var distance = -30.0f; distance <= length + 30.0f; distance += 12.0f)
+            {
+                var t = Mathf.Clamp01(distance / length);
+                var center = (Vector3)container.EvaluatePosition(t);
+                var tangent = ((Vector3)container.EvaluateTangent(t));
+                tangent.y = 0.0f;
+                if (tangent.sqrMagnitude < 0.0001f) tangent = Vector3.right;
+                tangent.Normalize();
+
+                var right = Vector3.Cross(Vector3.up, tangent).normalized;
+                // 奥側(カメラの反対=+z側)に置く
+                var farSign = right.z >= 0.0f ? 1.0f : -1.0f;
+
+                // 近景の丘(緑)
+                PlaceSilhouette(theme, random, root.transform, center,
+                    right * (farSign * (22.0f + (float)random.NextDouble() * 12.0f)),
+                    6.0f + (float)random.NextDouble() * 6.0f,
+                    theme.nearHillMaterial);
+
+                // 遠景の山(青灰)は1つおきに
+                if (random.Next(2) == 0)
+                {
+                    PlaceSilhouette(theme, random, root.transform, center,
+                        right * (farSign * (45.0f + (float)random.NextDouble() * 40.0f)),
+                        16.0f + (float)random.NextDouble() * 16.0f,
+                        theme.farMountainMaterial);
+                }
+            }
+
+            // 谷底の暗い床(視覚のみ。コライダー無し=落下死は維持される)
+            if (theme.abyssMaterial != null)
+            {
+                var abyss = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                Undo.RegisterCreatedObjectUndo(abyss, "Generate Horizon");
+                Object.DestroyImmediate(abyss.GetComponent<Collider>());
+                abyss.name = "AbyssFloor";
+                abyss.transform.SetParent(root.transform);
+                abyss.transform.position = new Vector3(length * 0.5f, -12.0f, 20.0f);
+                abyss.transform.localScale = new Vector3(length + 120.0f, 0.5f, 200.0f);
+                abyss.GetComponent<MeshRenderer>().sharedMaterial = theme.abyssMaterial;
+            }
+
+            return root;
+        }
+
+        static void PlaceSilhouette(
+            StageTheme theme, System.Random random, Transform parent,
+            Vector3 center, Vector3 offset, float scale, Material material)
+        {
+            var prefab = theme.horizonPrefabs[random.Next(theme.horizonPrefabs.Length)];
+            if (prefab == null) return;
+
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            if (instance == null) return;
+
+            Undo.RegisterCreatedObjectUndo(instance, "Generate Horizon");
+            instance.transform.SetParent(parent);
+            var position = center + offset;
+            position.y = center.y - 2.0f; // 少し沈めて根元を隠す
+            instance.transform.position = position;
+            instance.transform.rotation = Quaternion.Euler(0.0f, (float)random.NextDouble() * 360.0f, 0.0f);
+            instance.transform.localScale = Vector3.one * scale;
+
+            // シルエット用の単色マテリアルに差し替え、コライダーは外す
+            if (material != null)
+            {
+                foreach (var renderer in instance.GetComponentsInChildren<Renderer>())
+                {
+                    var materials = new Material[renderer.sharedMaterials.Length];
+                    for (var i = 0; i < materials.Length; i++)
+                    {
+                        materials[i] = material;
+                    }
+                    renderer.sharedMaterials = materials;
+                }
+            }
+            foreach (var collider in instance.GetComponentsInChildren<Collider>())
+            {
+                Object.DestroyImmediate(collider);
+            }
+        }
+
+        /// <summary>
         /// テーマの環境設定(空・フォグ・太陽光)をアクティブシーンへ適用する。
         /// </summary>
         public static void ApplyEnvironment(StageTheme theme)

@@ -34,8 +34,24 @@ namespace Rail
         [Header("道")]
         public Material roadMaterial = null;
 
-        [Header("散布(道の縁の飾り)")]
+        [Header("地面(メインルート沿いに広がる大地)")]
+        public bool generateGround = true;
+        public Material groundMaterial = null;
+        public float groundWidth = 60.0f;
+        public float groundHolePadding = 1.5f; // 道の穴より広めに地面を裂いて「谷」にする
+
+        [Header("遠景(丘と山のシルエット)")]
+        public bool generateHorizon = true;
+        public GameObject[] horizonPrefabs = null; // 巨大化して山にするモデル
+        public Material nearHillMaterial = null;   // 近景の丘(緑)
+        public Material farMountainMaterial = null; // 遠景の山(青灰)
+        public Material abyssMaterial = null;       // 谷底の暗い床
+
+        [Header("散布(道端と大地の飾り)")]
         public List<ScatterEntry> scatter = new();
+
+        [HideInInspector]
+        public int builderVersion = 0; // ThemeSetupToolの構築バージョン(旧テーマの自動更新用)
 
         [Header("環境")]
         public Material skyboxMaterial = null;

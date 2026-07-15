@@ -127,10 +127,26 @@ namespace Rail.EditorTools
                 top, 2.0f, 6.0f, 0.8f, true, parent, null, roadMaterial);
             Undo.AddComponent<GeneratedStageContent>(topRoad);
 
-            // --- テーマ適用(散布と環境) ---
-            // 散布は道のコライダーに足場を求めるため、道の生成後に行う
+            // --- テーマ適用(大地・遠景・散布・環境) ---
             if (theme != null)
             {
+                // 大地: メインルート沿いに広い地面を敷く。道の穴は少し広めに裂いて「谷」にする
+                if (theme.generateGround)
+                {
+                    var groundHoles = PadHoles(mainHoles, theme.groundHolePadding);
+                    var ground = StageGeometryUtility.GenerateGroundRibbon(
+                        main, theme.groundWidth, -0.35f, groundHoles, theme.groundMaterial, parent);
+                    Undo.AddComponent<GeneratedStageContent>(ground);
+                }
+
+                // 遠景: 丘と山のシルエット+谷底の暗い床
+                if (theme.generateHorizon)
+                {
+                    var horizon = StageDecorator.GenerateHorizon(main, theme, parent);
+                    Undo.AddComponent<GeneratedStageContent>(horizon);
+                }
+
+                // 散布は地面・道のコライダーに足場を求めるため、それらの生成後に行う
                 Physics.SyncTransforms();
 
                 var mainDeco = StageDecorator.Scatter(main, theme, parent);
@@ -187,6 +203,19 @@ namespace Rail.EditorTools
             }
 
             return container;
+        }
+
+        /// <summary>
+        /// 穴の範囲を前後に広げる(地面を道の穴より大きく裂いて谷に見せるため)。
+        /// </summary>
+        static Vector2[] PadHoles(Vector2[] holes, float padding)
+        {
+            var padded = new Vector2[holes.Length];
+            for (var i = 0; i < holes.Length; i++)
+            {
+                padded[i] = new Vector2(holes[i].x - padding, holes[i].y + padding);
+            }
+            return padded;
         }
 
         static void PlaceEnemy(GameObject prefab, SplineContainer target, float t, Transform parent)

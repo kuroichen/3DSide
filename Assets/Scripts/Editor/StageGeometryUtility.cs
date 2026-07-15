@@ -128,6 +128,77 @@ namespace Rail.EditorTools
             return root;
         }
 
+        /// <summary>
+        /// Splineに沿って幅の広い地面リボンを生成する(世界の大地。コライダーつき)。
+        /// holeRangesの区間は地面ごと裂けて谷になる。yOffsetで道より少し下げて敷く。
+        /// </summary>
+        public static GameObject GenerateGroundRibbon(
+            SplineContainer container, float width, float yOffset,
+            IReadOnlyList<Vector2> holeRanges, Material material, Transform parent)
+        {
+            float length = container.CalculateLength();
+            int n = Mathf.Max(8, Mathf.CeilToInt(length / 2.0f));
+            float hw = width * 0.5f;
+
+            var verts = new Vector3[(n + 1) * 2];
+            var uvs = new Vector2[(n + 1) * 2];
+            var tris = new List<int>(n * 6);
+
+            for (int i = 0; i <= n; i++)
+            {
+                float t = (float)i / n;
+                Vector3 pos = container.EvaluatePosition(t);
+                pos.y += yOffset;
+                Vector3 tan = ((Vector3)container.EvaluateTangent(t));
+                if (tan.sqrMagnitude < 0.0001f) tan = Vector3.right;
+                tan.y = 0.0f;
+                tan.Normalize();
+                Vector3 right = Vector3.Cross(Vector3.up, tan).normalized;
+
+                verts[i * 2] = pos - right * hw;
+                verts[i * 2 + 1] = pos + right * hw;
+                uvs[i * 2] = new Vector2(0.0f, t * length * 0.1f);
+                uvs[i * 2 + 1] = new Vector2(width * 0.1f, t * length * 0.1f);
+            }
+
+            for (int i = 0; i < n; i++)
+            {
+                // 谷(穴)の区間は面を張らない
+                float segmentCenterZ = (i + 0.5f) / n * length;
+                if (IsInHole(segmentCenterZ, holeRanges)) continue;
+
+                int v = i * 2;
+                tris.Add(v);
+                tris.Add(v + 2);
+                tris.Add(v + 1);
+                tris.Add(v + 1);
+                tris.Add(v + 2);
+                tris.Add(v + 3);
+            }
+
+            var mesh = new Mesh { name = "GroundMesh" };
+            mesh.indexFormat = verts.Length > 65535
+                ? UnityEngine.Rendering.IndexFormat.UInt32
+                : UnityEngine.Rendering.IndexFormat.UInt16;
+            mesh.vertices = verts;
+            mesh.uv = uvs;
+            mesh.triangles = tris.ToArray();
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            var go = new GameObject($"Ground_{container.name}");
+            Undo.RegisterCreatedObjectUndo(go, "Generate Ground");
+            go.transform.position = Vector3.zero;
+            if (parent != null) go.transform.SetParent(parent, true);
+
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var renderer = go.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = material != null ? material : CreateDefaultMaterial();
+            go.AddComponent<MeshCollider>().sharedMesh = mesh;
+
+            return go;
+        }
+
         static bool IsInHole(float railZ, IReadOnlyList<Vector2> holeRanges)
         {
             if (holeRanges == null) return false;
