@@ -56,6 +56,7 @@ namespace Rail
         public int builderVersion = 0; // ThemeSetupToolの構築バージョン(旧テーマの自動更新用)
 
         [Header("環境")]
+        public UnityEngine.Rendering.VolumeProfile postProcessProfile = null; // 絵作り(Bloom・色調整など)
         public Material skyboxMaterial = null;
         public bool enableFog = true;
         public Color fogColor = new Color(0.75f, 0.85f, 0.95f);

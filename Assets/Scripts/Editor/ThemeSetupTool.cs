@@ -11,7 +11,7 @@ namespace Rail.EditorTools
     /// </summary>
     public static class ThemeSetupTool
     {
-        const int BuilderVersion = 4; // 見た目の構成を変えたらインクリメント
+        const int BuilderVersion = 5; // 見た目の構成を変えたらインクリメント
 
         const string ThemeFolder = "Assets/Design/Themes";
         const string ThemePath = ThemeFolder + "/Theme_GreenHills.asset";
@@ -84,6 +84,7 @@ namespace Rail.EditorTools
                 "rock_largeA", "rock_largeC");
 
             theme.skyboxMaterial = EnsureSkyboxMaterial();
+            theme.postProcessProfile = EnsureVolumeProfile();
             theme.enableFog = true;
             theme.fogColor = new Color(0.82f, 0.88f, 0.95f); // 地平線色と合わせて世界の果てを溶かす
             theme.fogDensity = 0.007f;
@@ -198,6 +199,53 @@ namespace Rail.EditorTools
             EditorUtility.SetDirty(material);
 
             return material;
+        }
+
+        /// <summary>
+        /// 絵作り用のポストプロセスプロファイルを取得または作り直す。
+        /// ACESトーンマップ+控えめなBloom+彩度/コントラスト補正+ビネット。
+        /// </summary>
+        static UnityEngine.Rendering.VolumeProfile EnsureVolumeProfile()
+        {
+            var path = $"{ThemeFolder}/PostProcess_GreenHills.asset";
+            var profile = AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.VolumeProfile>(path);
+
+            if (profile == null)
+            {
+                profile = ScriptableObject.CreateInstance<UnityEngine.Rendering.VolumeProfile>();
+                AssetDatabase.CreateAsset(profile, path);
+            }
+            else
+            {
+                // 作り直し: 既存の設定コンポーネント(サブアセット)を消して再構築
+                foreach (var component in profile.components)
+                {
+                    Object.DestroyImmediate(component, true);
+                }
+                profile.components.Clear();
+            }
+
+            var tonemapping = profile.Add<UnityEngine.Rendering.Universal.Tonemapping>(true);
+            tonemapping.mode.value = UnityEngine.Rendering.Universal.TonemappingMode.ACES;
+            AssetDatabase.AddObjectToAsset(tonemapping, profile);
+
+            var bloom = profile.Add<UnityEngine.Rendering.Universal.Bloom>(true);
+            bloom.intensity.value = 0.35f;
+            bloom.threshold.value = 1.1f;
+            AssetDatabase.AddObjectToAsset(bloom, profile);
+
+            var colorAdjustments = profile.Add<UnityEngine.Rendering.Universal.ColorAdjustments>(true);
+            colorAdjustments.postExposure.value = 0.25f;
+            colorAdjustments.saturation.value = 12.0f;
+            colorAdjustments.contrast.value = 8.0f;
+            AssetDatabase.AddObjectToAsset(colorAdjustments, profile);
+
+            var vignette = profile.Add<UnityEngine.Rendering.Universal.Vignette>(true);
+            vignette.intensity.value = 0.18f;
+            AssetDatabase.AddObjectToAsset(vignette, profile);
+
+            EditorUtility.SetDirty(profile);
+            return profile;
         }
 
         /// <summary>

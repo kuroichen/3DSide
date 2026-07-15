@@ -160,6 +160,14 @@ namespace Rail.EditorTools
                 Undo.AddComponent<GeneratedStageContent>(topDeco);
 
                 StageDecorator.ApplyEnvironment(theme);
+
+                // 絵作り(ポストプロセス)
+                var postProcess = StageDecorator.ApplyPostProcess(theme);
+                if (postProcess != null)
+                {
+                    postProcess.transform.SetParent(parent);
+                    Undo.AddComponent<GeneratedStageContent>(postProcess);
+                }
             }
 
             // カメラはジャンプの放物線全体が見える距離まで引く

@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.Splines;
 
 namespace Rail.EditorTools
@@ -187,6 +188,34 @@ namespace Rail.EditorTools
         }
 
         /// <summary>
+        /// テーマの絵作り(ポストプロセス)をシーンへ適用する。
+        /// グローバルVolumeを生成し、カメラのポストプロセスとFXAAを有効化する。
+        /// 生成したVolumeのGameObjectを返す(呼び出し側で生成物マーカーを付ける)。
+        /// </summary>
+        public static GameObject ApplyPostProcess(StageTheme theme)
+        {
+            // カメラ側の設定(ポストプロセス有効化+ローポリの輪郭を滑らかにするFXAA)
+            var camera = Camera.main;
+            if (camera != null)
+            {
+                var cameraData = camera.GetUniversalAdditionalCameraData();
+                cameraData.renderPostProcessing = true;
+                cameraData.antialiasing = UnityEngine.Rendering.Universal.AntialiasingMode.FastApproximateAntialiasing;
+                EditorUtility.SetDirty(camera.gameObject);
+            }
+
+            if (theme.postProcessProfile == null) return null;
+
+            var go = new GameObject("GlobalPostProcess");
+            Undo.RegisterCreatedObjectUndo(go, "Apply Post Process");
+            var volume = go.AddComponent<UnityEngine.Rendering.Volume>();
+            volume.isGlobal = true;
+            volume.sharedProfile = theme.postProcessProfile;
+
+            return go;
+        }
+
+        /// <summary>
         /// テーマの環境設定(空・フォグ・太陽光)をアクティブシーンへ適用する。
         /// </summary>
         public static void ApplyEnvironment(StageTheme theme)
@@ -222,6 +251,8 @@ namespace Rail.EditorTools
             {
                 sun.color = theme.sunColor;
                 sun.transform.rotation = Quaternion.Euler(theme.sunEuler);
+                sun.shadows = LightShadows.Soft;
+                sun.shadowStrength = 0.85f;
                 RenderSettings.sun = sun;
             }
         }
