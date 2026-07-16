@@ -1,0 +1,124 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de6548f417eb54ba2a40b619e5f7bab3, type: 3}
+  m_Name: Theme_FantasyForest
+  m_EditorClassIdentifier: Assembly-CSharp::Rail.StageTheme
+  roadMaterial: {fileID: 2100000, guid: 6171d796cca82490b92a3052e8ed92b3, type: 2}
+  generateGround: 1
+  groundMaterial: {fileID: 2100000, guid: 75d1828d839a844fb9bea3f74f2bf850, type: 2}
+  cliffMaterial: {fileID: 2100000, guid: 65be43197ee194f53aab38fa1eb701e9, type: 2}
+  groundWidth: 60
+  groundHolePadding: 1.5
+  cliffDepth: 14
+  generateHorizon: 1
+  horizonPrefabs:
+  - {fileID: 1562119382739742, guid: c07f24e35f07ce74ba43afa35d48adf7, type: 3}
+  - {fileID: 1220206043906976, guid: 86263e8355f96ba4ab9fdf4e96c2090f, type: 3}
+  - {fileID: 1128399435428950, guid: 94a3318e328358d4095f16b054b14180, type: 3}
+  nearHillMaterial: {fileID: 2100000, guid: 13adeeea43dbe40808ec0e11df5fa604, type: 2}
+  farMountainMaterial: {fileID: 2100000, guid: f933c4a438dc64a44ac0d888897167c0, type: 2}
+  abyssMaterial: {fileID: 2100000, guid: d7df3d0ef71204b47b02146ac87e8b0c, type: 2}
+  scatter:
+  - label: "\u8349\u30FB\u30B7\u30C0"
+    prefabs:
+    - {fileID: 8812584711120714047, guid: 91d8d8ad5c541394c80f7cc7e1fd253b, type: 3}
+    - {fileID: 7045990119674233780, guid: 8e20bb73d6781f047a846b8e13553d15, type: 3}
+    - {fileID: 2022498996388788194, guid: ea784f90c6a294d4c943e54ce9184fb2, type: 3}
+    - {fileID: 5982839853698224172, guid: c00784b589bee494b831054cc54dbf7b, type: 3}
+    - {fileID: 6205237258745050536, guid: 0c7542f3d05c9a4468ea43aec782fdac, type: 3}
+    - {fileID: 4785413492924531132, guid: cfe991abfe1d8a34e90a8b8d50f9a61c, type: 3}
+    densityPer10m: 6
+    minSideOffset: 2.5
+    maxSideOffset: 14
+    minScale: 0.8
+    maxScale: 1.3
+    side: 0
+    targetHeightMin: 0.3
+    targetHeightMax: 0.7
+  - label: "\u82B1"
+    prefabs:
+    - {fileID: 2153456347341862418, guid: 7358ad30e7ab6be4b8cf21062d019675, type: 3}
+    - {fileID: 1973268181744308885, guid: ad737f18422ef564aa21b23aab39d274, type: 3}
+    - {fileID: 1179445593872686852, guid: cd03a41894dab5e49abe8481b9a4a630, type: 3}
+    - {fileID: 4522537107456461547, guid: 7f72c76c87dff5149967072a8aabddef, type: 3}
+    densityPer10m: 2.5
+    minSideOffset: 3
+    maxSideOffset: 12
+    minScale: 0.8
+    maxScale: 1.3
+    side: 0
+    targetHeightMin: 0.3
+    targetHeightMax: 0.6
+  - label: "\u4F4E\u6728\u30FB\u690D\u7269"
+    prefabs:
+    - {fileID: 3321783486682416297, guid: e6ee60cd48ca7fa478e3065e30330864, type: 3}
+    - {fileID: 1202788212063637620, guid: eb2e3b1d2f96f724e97c8d931ec0d6fc, type: 3}
+    - {fileID: 3889244126477486128, guid: 5bc68b98108d78a418afb40cc75e2a81, type: 3}
+    densityPer10m: 1.2
+    minSideOffset: 4
+    maxSideOffset: 14
+    minScale: 0.8
+    maxScale: 1.3
+    side: 0
+    targetHeightMin: 0.8
+    targetHeightMax: 1.6
+  - label: "\u5CA9"
+    prefabs:
+    - {fileID: 1970564158491392, guid: 8e8f8660f45621a4a804df622b985183, type: 3}
+    - {fileID: 1600038145722832, guid: f36916143c7509543b1b8d40091baa24, type: 3}
+    - {fileID: 1957529895149934, guid: 5c11b6a454fa5fd458d541957f1de507, type: 3}
+    densityPer10m: 0.6
+    minSideOffset: 4
+    maxSideOffset: 16
+    minScale: 0.8
+    maxScale: 1.3
+    side: 0
+    targetHeightMin: 0.6
+    targetHeightMax: 1.5
+  - label: "\u6728(\u5965\u5074\u306E\u307F)"
+    prefabs:
+    - {fileID: 1243781198178196, guid: 9da14cd80e3d72b4c8501e9acc6740f3, type: 3}
+    - {fileID: 1795183421160198, guid: 97c810fbbe2577a45863f4be151b599b, type: 3}
+    - {fileID: 1216688828669844, guid: 47356d574ebc3a545bfaef26eb02a2ea, type: 3}
+    - {fileID: 1951202686989992, guid: 5219ccfa3b129f645bfb105ac244e8f5, type: 3}
+    - {fileID: 1387113753911058, guid: dc20bf501e8161b40859eb66568d49f6, type: 3}
+    - {fileID: 1235048213169736, guid: fb24df3494aa71744879dafcedcc0b86, type: 3}
+    densityPer10m: 1
+    minSideOffset: 8
+    maxSideOffset: 20
+    minScale: 0.8
+    maxScale: 1.3
+    side: 1
+    targetHeightMin: 5
+    targetHeightMax: 9
+  - label: "\u304D\u306E\u3053"
+    prefabs:
+    - {fileID: 1031654717077781723, guid: 33610b12665a8ba4ba227a51bf5ff3c2, type: 3}
+    - {fileID: 2357403118300381098, guid: 4c2012bc51015e8438152a82f7d7dc32, type: 3}
+    - {fileID: 5060596682829054874, guid: 1ceaf06647257394f8d75a1759c6be00, type: 3}
+    densityPer10m: 0.4
+    minSideOffset: 3
+    maxSideOffset: 10
+    minScale: 0.8
+    maxScale: 1.3
+    side: 0
+    targetHeightMin: 0.3
+    targetHeightMax: 0.7
+  builderVersion: 2
+  postProcessProfile: {fileID: 11400000, guid: 0a5e139e8699b43508ad839f8ec26f6e, type: 2}
+  skyboxMaterial: {fileID: 2100000, guid: 4f35b1186b8ec4bc490876191b242ea8, type: 2}
+  enableFog: 1
+  fogColor: {r: 0.8, g: 0.86, b: 0.92, a: 1}
+  fogDensity: 0.008
+  sunColor: {r: 1, g: 0.96, b: 0.88, a: 1}
+  sunEuler: {x: 45, y: -35, z: 0}
+  seed: 20260716
