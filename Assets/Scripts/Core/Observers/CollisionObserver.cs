@@ -36,13 +36,10 @@ namespace Rail
 
             if (this.hitCollider.gameObject != this.gameObject)
             {
-                var relay = this.hitCollider.GetComponent<CollisionObserverRelay>();
-                if (relay == null)
-                {
-                    relay = this.hitCollider.gameObject.AddComponent<CollisionObserverRelay>();
-                }
-
-                relay.Initialize(this);
+                Debug.LogWarning(
+                    $"[CollisionObserver][{this.gameObject.name}]" +
+                    "hitCollider must be attached to the same GameObject.",
+                    this);
             }
         }
 

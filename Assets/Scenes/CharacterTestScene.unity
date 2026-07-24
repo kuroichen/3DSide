@@ -494,6 +494,7 @@ GameObject:
   - component: {fileID: 854003458}
   - component: {fileID: 854003457}
   - component: {fileID: 854003456}
+  - component: {fileID: 865850916}
   - component: {fileID: 854003454}
   m_Layer: 12
   m_Name: Cube
@@ -627,7 +628,6 @@ GameObject:
   m_Component:
   - component: {fileID: 865850914}
   - component: {fileID: 865850915}
-  - component: {fileID: 865850916}
   - component: {fileID: 865850917}
   m_Layer: 0
   m_Name: HealItem
@@ -671,7 +671,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 865850913}
+  m_GameObject: {fileID: 854003452}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5a896e0e80cce4b3ea57b33ff7de2e15, type: 3}
