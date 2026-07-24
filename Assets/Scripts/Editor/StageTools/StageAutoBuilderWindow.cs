@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Splines;
+using UnityEngine.UI;
 
 namespace Rail.EditorTools
 {
@@ -606,6 +607,13 @@ namespace Rail.EditorTools
                 log.AppendLine("- StageFlowManager: 生成");
             }
 
+            // ScreenTransition(暗転用の全画面Canvas)
+            if (FindAnyObjectByType<ScreenTransition>(FindObjectsInactive.Include) == null)
+            {
+                BuildScreenTransition();
+                log.AppendLine("- ScreenTransition: 生成");
+            }
+
             // カメラ
             var followCamera = ResolveFollowCamera(parent, log);
 
@@ -630,6 +638,42 @@ namespace Rail.EditorTools
             {
                 so.FindProperty("followCamera").objectReferenceValue = followCamera;
             }
+            so.ApplyModifiedProperties();
+        }
+
+        /// <summary>
+        /// 暗転用のScreenTransition(Canvas+全画面Image)を生成する。
+        /// ランタイムのDontDestroyOnLoadがルート必須のため、カメラと同様に
+        /// ルート外(シーン直下)へ置き、再生成でも削除しない。
+        /// </summary>
+        void BuildScreenTransition()
+        {
+            var go = new GameObject("ScreenTransition");
+            Undo.RegisterCreatedObjectUndo(go, UndoName);
+
+            var canvas = Undo.AddComponent<Canvas>(go);
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 100;  // 他のUIより手前で暗転させる
+            Undo.AddComponent<CanvasScaler>(go);
+            Undo.AddComponent<GraphicRaycaster>(go);
+
+            var screenGo = new GameObject("Screen");
+            Undo.RegisterCreatedObjectUndo(screenGo, UndoName);
+            screenGo.transform.SetParent(go.transform, false);
+
+            var image = Undo.AddComponent<Image>(screenGo);
+            image.color = Color.black;
+
+            // 全画面に引き伸ばす
+            var rect = image.rectTransform;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var transition = Undo.AddComponent<ScreenTransition>(go);
+            var so = new SerializedObject(transition);
+            so.FindProperty("screen").objectReferenceValue = image;
             so.ApplyModifiedProperties();
         }
 

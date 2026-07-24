@@ -18,6 +18,8 @@ namespace Rail
         [SerializeField]
         int initialLives = 2;
 
+
+
         public IObservable<Unit> OnPlayerDeadObservable() => this.onPlayerDeadSubject;
         public IObservable<Unit> OnPlayerDiedObservable() => this.onPlayerDiedSubject;
         public IObservable<PlayerController> OnPlayerSpawnedObservable() => this.onPlayerSpawnedSubject;
@@ -63,6 +65,40 @@ namespace Rail
             this.onLivesChangedSubject.OnNext(this.currentLives);
             Respawn();
             return true;
+        }
+
+        public void SetRespawnPoint(SplineAnchor point)
+        {
+            if (point == null) return;
+
+            this.spawnPoint = point;
+        }
+
+        public void MoveTo(SplineAnchor point)
+        {
+            if (point == null || this.playerController == null)
+            {
+                return;
+            }
+
+            var characterController = this.playerController.GetComponent<CharacterController>();
+            if (characterController != null)
+            {
+                characterController.enabled = false;
+            }
+
+            this.playerController.transform.SetPositionAndRotation(
+                point.transform.position,
+                point.transform.rotation);
+
+            this.playerController.SetSpline(
+                point.SplineContainer,
+                point.T);
+
+            if (characterController != null)
+            {
+                characterController.enabled = true;
+            }
         }
 
         void Respawn()
