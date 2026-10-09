@@ -90,6 +90,28 @@ namespace Rail
         }
 
         /// <summary>
+        /// BootstrapからAudioMixerと各出力Groupを設定する。
+        /// AudioSourceはAwakeで生成済みなので、設定後に出力先を更新する。
+        /// </summary>
+        public void Initialize(AudioMixerSettings settings)
+        {
+            if (settings == null || !settings.IsValid)
+            {
+                Debug.LogWarning(
+                    "[AudioManager] AudioMixerSettings is missing or invalid.",
+                    this);
+                return;
+            }
+
+            this.audioMixer = settings.AudioMixer;
+            this.bgmMixerGroup = settings.BGMMixerGroup;
+            this.seMixerGroup = settings.SEMixerGroup;
+            this.uiMixerGroup = settings.UIMixerGroup;
+
+            ApplyMixerRouting();
+        }
+
+        /// <summary>
         /// BGMを再生する。
         /// 別のBGMが再生中ならフェードアウト後に切り替え、フェードインする。
         /// </summary>
@@ -277,6 +299,25 @@ namespace Rail
                 var source = sourceObject.AddComponent<AudioSource>();
                 ConfigureSource(source, this.seMixerGroup, false);
                 this.seSources.Add(source);
+            }
+        }
+
+        /// <summary>
+        /// 生成済みAudioSourceへ現在のMixer Groupを適用する。
+        /// UI音は再生時にUI Groupへ切り替えるため、待機中はSE Groupへ接続する。
+        /// </summary>
+        void ApplyMixerRouting()
+        {
+            if (this.bgmSource != null)
+            {
+                this.bgmSource.outputAudioMixerGroup =
+                    this.bgmMixerGroup;
+            }
+
+            foreach (var source in this.seSources)
+            {
+                source.outputAudioMixerGroup =
+                    this.seMixerGroup;
             }
         }
 
