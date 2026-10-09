@@ -28,6 +28,28 @@ namespace Rail
         }
 
         /// <summary>
+        /// Bootstrapからランタイム生成した画面Imageを設定する。
+        /// </summary>
+        public void Initialize(Image screenImage, bool showBlack)
+        {
+            this.screen = screenImage;
+            this.startBlack = showBlack;
+
+            SetAlpha(showBlack ? 1.0f : 0.0f);
+            SetRaycastTarget(showBlack);
+        }
+
+        /// <summary>
+        /// フェードを行わず、即座に暗転状態へ切り替える。
+        /// Stage開始時にFadeInの始点を揃えるために使用する。
+        /// </summary>
+        public void ShowBlackImmediately()
+        {
+            SetAlpha(1.0f);
+            SetRaycastTarget(true);
+        }
+
+        /// <summary>
         /// 暗転解除
         /// </summary>
         public async UniTask FadeIn(float duration = -1.0f)
