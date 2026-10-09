@@ -1,7 +1,6 @@
 using System;
 using UniRx;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.Splines;
 
 namespace Rail
@@ -34,16 +33,19 @@ namespace Rail
             Dead
         }
 
-        InputAction moveInput = null;
-        InputAction jumpInput = null;
-        InputAction attackInput = null;
+        IPlayerInputSource inputSource = null;
 
         PlayerState currentState = PlayerState.Move;
         float knockbackTimer = 0.0f;
 
-        protected override float GetInput() => this.moveInput.ReadValue<Vector2>().x;
-        protected override bool IsJumpPressed() => this.jumpInput.WasPressedThisFrame();
-        protected override bool IsJumpHeld() => this.jumpInput.IsPressed();
+        protected override float GetInput() => this.inputSource?.Move ?? 0.0f;
+        protected override bool IsJumpPressed() => this.inputSource?.JumpPressed ?? false;
+        protected override bool IsJumpHeld() => this.inputSource?.JumpHeld ?? false;
+
+        public void SetInputSource(IPlayerInputSource inputSource)
+        {
+            this.inputSource = inputSource;
+        }
 
         public IObservable<Unit> OnDiedObservable()
         {
@@ -66,9 +68,6 @@ namespace Rail
         protected override void Awake()
         {
             base.Awake();
-            this.moveInput = InputSystem.actions.FindAction("Move");
-            this.jumpInput = InputSystem.actions.FindAction("Jump");
-            this.attackInput = InputSystem.actions.FindAction("Attack");
 
             // プレイヤー自身の被弾判定
             this.collisionObserver.OnTriggerEnterObservable()
@@ -223,7 +222,7 @@ namespace Rail
         {
             base.Update();
             
-            if (this.attackInput.WasPressedThisFrame())
+            if (this.inputSource?.AttackPressed == true)
             {
                 ChangeState(PlayerState.Attack);
             }

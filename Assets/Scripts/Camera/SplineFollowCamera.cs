@@ -44,8 +44,24 @@ namespace Rail
 
         public void SetTarget(SplineMover mover)
         {
+            if (this.targetMover == mover) return;
+
+            if (this.targetMover != null)
+            {
+                this.targetMover.OnSplineDirectionChanged -= this.OnSplineDirectionChanged;
+            }
+
             this.targetMover = mover;
-            this.targetMover.OnSplineDirectionChanged += OnSplineDirectionChanged;
+
+            if (this.targetMover != null)
+            {
+                this.targetMover.OnSplineDirectionChanged += this.OnSplineDirectionChanged;            
+            }
+        }
+
+        public void ClearTarget()
+        {
+            this.SetTarget(null);
         }
 
         void OnSplineDirectionChanged(bool isRightward)

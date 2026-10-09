@@ -102,7 +102,7 @@ namespace Rail.EditorTools
             var playerManager = new GameObject("PlayerManager").AddComponent<PlayerManager>();
             var managerSo = new SerializedObject(playerManager);
             managerSo.FindProperty("playerPrefab").objectReferenceValue =
-                AssetDatabase.LoadAssetAtPath<PlayerController>(PlayerPrefabPath);
+                AssetDatabase.LoadAssetAtPath<PlayerView>(PlayerPrefabPath);
             managerSo.FindProperty("spawnPoint").objectReferenceValue = anchor;
             managerSo.FindProperty("followCamera").objectReferenceValue = followCamera;
             managerSo.ApplyModifiedProperties();

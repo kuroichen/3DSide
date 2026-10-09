@@ -101,6 +101,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6401894523991307316}
   - component: {fileID: 5829666798495753997}
+  - component: {fileID: 6940431802523529980}
   - component: {fileID: 7148127837883362467}
   - component: {fileID: 254520806370062368}
   - component: {fileID: 5974989563063003347}
@@ -153,6 +154,20 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &6940431802523529980
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3304438389242589241}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 673a8b4a7e1a943ee82497e190dd9e8a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Rail.PlayerView
+  playerController: {fileID: 7148127837883362467}
+  characterController: {fileID: 5829666798495753997}
 --- !u!114 &7148127837883362467
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -170,9 +185,24 @@ MonoBehaviour:
   speed: 5
   t: 0
   impulseDecay: 10
+  airborneEndMargin: 5
   defaultStatus: {fileID: 11400000, guid: beff10841765641759de3ab18cdd3d4b, type: 2}
-  gravity: -25
+  gravityUp: -36
+  gravityDown: -54
+  scaleJumpByHeight: 1
+  jumpHeightInBodies: 1.67
+  timeToApex: 0.43
+  fallGravityRatio: 1.5
   rotationSpeed: 10
+  fallDeathY: -20
+  jumpCutMultiplier: 0.4
+  coyoteTime: 0.1
+  jumpBufferTime: 0.15
+  maxFallSpeed: 20
+  hardLandFallDistance: 4
+  hardLandStunTime: 0.25
+  railCorrectionSpeed: 15
+  groundCheckDistance: 0.15
   collisionObserver: {fileID: 254520806370062368}
   weaponCollisionObserver: {fileID: 2212210058465066554}
   animationEventObserver: {fileID: 3926255620243332905}
