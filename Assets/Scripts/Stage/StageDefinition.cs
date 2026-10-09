@@ -1,12 +1,9 @@
 using UnityEngine;
-using System;
-using UniRx;
 
 namespace Rail
 {
     /// <summary>
-    /// ステージの情報を取りまとめるクラス。
-    /// スポーン地点、最初のエリア情報、各種判定エリアを取りまとめて監視などを行う。
+    /// ステージのメタ情報
     /// </summary>
     public class StageDefinition : MonoBehaviour
     {
@@ -14,31 +11,12 @@ namespace Rail
         StageArea initialArea = null;
 
         [SerializeField]
-        SplineAnchor startPoint = null;
+        StageView view = null;
 
-        [SerializeField]
-        AreaTrigger[] areaTriggers = Array.Empty<AreaTrigger>();
-
+        // Stage開始時のエリア
         public StageArea InitialArea => this.initialArea;
 
-        public SplineAnchor StartPoint => this.startPoint;
-
-        public IObservable<AreaEventInfo> OnAreaEventObservable() => this.onAreaEventSubject;
-
-        readonly Subject<AreaEventInfo> onAreaEventSubject = new();
-
-        void Awake()
-        {
-            this.onAreaEventSubject.AddTo(this);
-
-            foreach (var trigger in this.areaTriggers)
-            {
-                if (trigger == null) continue;
-
-                trigger.OnEnteredObservable()
-                    .Subscribe(info => this.onAreaEventSubject.OnNext(info))
-                    .AddTo(this);
-            }
-        }
+        // 個別ステージSceneに置いてあるView
+        public StageView View => this.view;
     }
 }

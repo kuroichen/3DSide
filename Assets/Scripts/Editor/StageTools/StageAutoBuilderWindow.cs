@@ -4,7 +4,6 @@ using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Splines;
-using UnityEngine.UI;
 
 namespace Rail.EditorTools
 {
@@ -34,7 +33,6 @@ namespace Rail.EditorTools
 
         const string RootName = "GeneratedStage";
         const string UndoName = "Stage Auto Build";
-        const string PlayerPrefabPath = "Assets/Prefabs/Player.prefab";
 
         // 対象Spline
         bool targetAllSplines = true;
@@ -65,7 +63,6 @@ namespace Rail.EditorTools
         // ⑤ マネージャ配線
         bool enableManagers = true;
         Vector3 cameraOffset = new Vector3(0.0f, 2.0f, 8.0f);
-        PlayerController playerPrefab = null;
 
         // ⑥ 敵・アイテム配置
         bool enablePlacement = true;
@@ -77,14 +74,6 @@ namespace Rail.EditorTools
         static void Open()
         {
             GetWindow<StageAutoBuilderWindow>("Stage Auto Builder");
-        }
-
-        void OnEnable()
-        {
-            if (this.playerPrefab == null)
-            {
-                this.playerPrefab = AssetDatabase.LoadAssetAtPath<PlayerController>(PlayerPrefabPath);
-            }
         }
 
         void OnGUI()
@@ -225,14 +214,12 @@ namespace Rail.EditorTools
             this.enableManagers = EditorGUILayout.ToggleLeft(
                 "⑤ マネージャを生成・配線", this.enableManagers, EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "RailManager / StageFlowManager / PlayerManager と、カメラ(SplineFollowCamera)を用意します。" +
+                "RailManager / StageFlowManager と、カメラ(SplineFollowCamera)を用意します。" +
                 "MainCameraがあればそこにカメラ機能を追加し、無ければStageCameraを新規生成します。",
                 MessageType.None);
 
             using (new EditorGUI.DisabledScope(!this.enableManagers))
             {
-                this.playerPrefab = (PlayerController)EditorGUILayout.ObjectField(
-                    "プレイヤープレハブ", this.playerPrefab, typeof(PlayerController), false);
                 this.cameraOffset = EditorGUILayout.Vector3Field("カメラオフセット", this.cameraOffset);
             }
         }
@@ -385,7 +372,7 @@ namespace Rail.EditorTools
 
             if (this.enableManagers)
             {
-                BuildManagers(spawnAnchor, root.transform, log);
+                BuildManagers(root.transform, log);
             }
 
             if (this.enablePlacement)
@@ -591,7 +578,7 @@ namespace Rail.EditorTools
         // -----------------------------
         // ⑤ マネージャ配線
         // -----------------------------
-        void BuildManagers(SplineAnchor spawnAnchor, Transform parent, StringBuilder log)
+        void BuildManagers(Transform parent, StringBuilder log)
         {
             // RailManager
             if (FindAnyObjectByType<RailManager>() == null)
@@ -601,80 +588,24 @@ namespace Rail.EditorTools
             }
 
             // StageFlowManager
-            if (FindAnyObjectByType<StageFlowManager>() == null)
+            var flowManager = FindAnyObjectByType<StageFlowManager>();
+            if (flowManager == null)
             {
-                CreateManagerObject<StageFlowManager>("StageFlowManager", parent);
+                flowManager = CreateManagerObject<StageFlowManager>("StageFlowManager", parent);
                 log.AppendLine("- StageFlowManager: 生成");
             }
 
-            // ScreenTransition(暗転用の全画面Canvas)
-            if (FindAnyObjectByType<ScreenTransition>(FindObjectsInactive.Include) == null)
-            {
-                BuildScreenTransition();
-                log.AppendLine("- ScreenTransition: 生成");
-            }
-
             // カメラ
-            var followCamera = ResolveFollowCamera(parent, log);
+            ResolveFollowCamera(parent, log);
 
-            // PlayerManager
-            var playerManager = FindAnyObjectByType<PlayerManager>();
-            if (playerManager == null)
+            // 個別ステージSceneのUnity表現
+            var stageView = parent.GetComponent<StageView>();
+            if (stageView == null)
             {
-                playerManager = CreateManagerObject<PlayerManager>("PlayerManager", parent);
-                log.AppendLine("- PlayerManager: 生成");
+                stageView = Undo.AddComponent<StageView>(parent.gameObject);
+                log.AppendLine("- StageView: 生成");
             }
 
-            var so = new SerializedObject(playerManager);
-            if (this.playerPrefab != null)
-            {
-                so.FindProperty("playerPrefab").objectReferenceValue = this.playerPrefab;
-            }
-            if (spawnAnchor != null)
-            {
-                so.FindProperty("spawnPoint").objectReferenceValue = spawnAnchor;
-            }
-            if (followCamera != null)
-            {
-                so.FindProperty("followCamera").objectReferenceValue = followCamera;
-            }
-            so.ApplyModifiedProperties();
-        }
-
-        /// <summary>
-        /// 暗転用のScreenTransition(Canvas+全画面Image)を生成する。
-        /// ランタイムのDontDestroyOnLoadがルート必須のため、カメラと同様に
-        /// ルート外(シーン直下)へ置き、再生成でも削除しない。
-        /// </summary>
-        void BuildScreenTransition()
-        {
-            var go = new GameObject("ScreenTransition");
-            Undo.RegisterCreatedObjectUndo(go, UndoName);
-
-            var canvas = Undo.AddComponent<Canvas>(go);
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 100;  // 他のUIより手前で暗転させる
-            Undo.AddComponent<CanvasScaler>(go);
-            Undo.AddComponent<GraphicRaycaster>(go);
-
-            var screenGo = new GameObject("Screen");
-            Undo.RegisterCreatedObjectUndo(screenGo, UndoName);
-            screenGo.transform.SetParent(go.transform, false);
-
-            var image = Undo.AddComponent<Image>(screenGo);
-            image.color = Color.black;
-
-            // 全画面に引き伸ばす
-            var rect = image.rectTransform;
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-
-            var transition = Undo.AddComponent<ScreenTransition>(go);
-            var so = new SerializedObject(transition);
-            so.FindProperty("screen").objectReferenceValue = image;
-            so.ApplyModifiedProperties();
         }
 
         T CreateManagerObject<T>(string name, Transform parent) where T : Component

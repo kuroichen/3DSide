@@ -14,11 +14,15 @@ namespace Rail
         [SerializeField]
         GameObject contentsRoot = null;
 
-        public string AreaId => this.areaId;
-        public bool IsAreaActive =>
-            this.contentsRoot != null 
-            && this.contentsRoot.activeSelf;
+        [SerializeField]
+        SplineAnchor startPoint = null;
 
+        // 
+        public string AreaId => this.areaId;
+
+        // このエリアのスタート地点
+        public SplineAnchor StartPoint => this.startPoint;
+    
         public void SetAreaActive(bool active)
         {
             if (this.contentsRoot == null)

@@ -9,15 +9,11 @@ namespace Rail
     /// </summary>
     public class StageFlowManager : MonoBehaviour
     {
-        [SerializeField]
-        StageDefinition stageDefinition = null;
-
-        StageArea currentArea = null;
-        bool isChangingArea = false;
-
         PlayerManager playerManager = null;
         ScreenTransition screenTransition = null;
+
         UniTaskCompletionSource respawnFadeOutCompletion = null;
+        
         bool isRespawning = false;
         bool hasPlayedInitialFadeIn = false;
 
@@ -37,6 +33,10 @@ namespace Rail
             {
                 Debug.LogWarning("[StageFlowManager]ScreenTransition not found.");
             }
+            else
+            {
+                this.screenTransition.ShowBlackImmediately();
+            }
 
             this.playerManager.OnPlayerSpawnedObservable()
                 .Subscribe(_ => PlayInitialFadeIn().Forget())
@@ -54,18 +54,6 @@ namespace Rail
             {
                 PlayInitialFadeIn().Forget();
             }
-
-            if (this.stageDefinition == null)
-            {
-                Debug.LogWarning("[StageFlowManager] StageDefinition not found.");
-                return;
-            }
-
-            this.currentArea = this.stageDefinition.InitialArea;
-
-            this.stageDefinition.OnAreaEventObservable()
-                .Subscribe(HandleAreaEvent)
-                .AddTo(this);
         }
 
         async UniTaskVoid PlayInitialFadeIn()
@@ -74,14 +62,9 @@ namespace Rail
 
             this.hasPlayedInitialFadeIn = true;
 
-            var transition = ScreenTransition.Instance;
-            if (transition == null)
-            {
-                Debug.LogWarning("[StageFlowManager]ScreenTransition not found.");
-                return;
-            }
+            if (this.screenTransition == null) return;
 
-            await transition.FadeIn();
+            await this.screenTransition.FadeIn();
         }
 
         void StartRespawnFadeOut()
@@ -95,116 +78,12 @@ namespace Rail
 
         async UniTaskVoid FadeOutForRespawnAsync()
         {
-            var transition = ScreenTransition.Instance;
-            if (transition == null)
-            {
-                Debug.LogWarning("[StageFlowManager]ScreenTransition not found.");
-                this.respawnFadeOutCompletion?.TrySetResult();
-                return;
-            }
-
-            await transition.FadeOut();
-            this.respawnFadeOutCompletion?.TrySetResult();
-        }
-
-        void HandleAreaEvent(AreaEventInfo info)
-        {
-            switch (info)
-            {
-                case AreaTransitionInfo areaTransition:
-                    ChangeAreaAsync(areaTransition).Forget();
-                    break;
-                case CheckPointInfo checkPoint:
-                    HandleCheckPoint(checkPoint);
-                    break;
-                case GoalInfo goal:
-                    HandleGoal(goal);
-                    break;
-                case StageExitInfo stageExit:
-                    HandleStageExit(stageExit);
-                    break;
-                default:
-                    Debug.LogWarning(
-                        $"Unsupported AreaEventInfo: "
-                        + $"{info.GetType().Name}");
-                    break;
-            }
-        }
-
-        async UniTaskVoid ChangeAreaAsync(AreaTransitionInfo info)
-        {
-            if (this.isChangingArea) return;
-
-            if (info.DestinationArea == null
-                || info.DestinationPoint == null)
-            {
-                Debug.LogWarning(
-                    "[StageFlowManager]"
-                    + "Area transition destination is invalid.");
-                return;
-            }
-
-            // 暗転開始
-            this.isChangingArea = true;
             if (this.screenTransition != null)
             {
                 await this.screenTransition.FadeOut();
             }
 
-            // 前のエリアを保持
-            var previousArea = this.currentArea;
-
-            // 新しいエリアをアクティブ化
-            info.DestinationArea.SetAreaActive(true);
-
-            // プレイヤーを遷移先に移動
-            this.playerManager.MoveTo(info.DestinationPoint);
-
-            // 元のエリアを非アクティブ化
-            if (previousArea != null
-                && previousArea != info.DestinationArea)
-            {
-                previousArea.SetAreaActive(false);
-            }
-
-            // 遷移先を保持
-            this.currentArea = info.DestinationArea;
-
-            // 暗転を解除
-            if (this.screenTransition != null)
-            {
-                await this.screenTransition.FadeIn();
-            }
-            this.isChangingArea = false;
-        }
-
-        void HandleCheckPoint(CheckPointInfo info)
-        {
-            if (info.RespawnPoint == null) return;
-
-            this.playerManager.SetRespawnPoint(info.RespawnPoint);
-
-            Debug.Log($"Checkpoint: {info.CheckPointId}");
-        }
-
-        void HandleGoal(GoalInfo info)
-        {
-            switch (info.GoalType)
-            {
-                case GoalType.Normal:
-                    break;
-                case GoalType.Secret:
-                    break;
-                case GoalType.Fake:
-                    break;
-            }
-
-            Debug.Log($"Goal: {info.GoalType}");
-        }
-
-        void HandleStageExit(StageExitInfo info)
-        {
-            Debug.Log("Exit stage.");
+            this.respawnFadeOutCompletion?.TrySetResult();
         }
 
         async UniTaskVoid OnPlayerDiedAsync()
@@ -221,10 +100,9 @@ namespace Rail
 
             this.playerManager.TryRespawn();
 
-            var transition = ScreenTransition.Instance;
-            if (transition != null)
+            if (this.screenTransition != null)
             {
-                await transition.FadeIn();
+                await this.screenTransition.FadeIn();
             }
 
             this.respawnFadeOutCompletion = null;

@@ -10,18 +10,22 @@ namespace Rail.EditorTools
 {
     /// <summary>
     /// 1ステージ目(要素見本市)を自動生成するメニュー。すり抜け床は不使用(全て通常コリジョン)。
+    /// 設計の正は Docs/specs/Stage1新設計.md(レベルデザイン法則集準拠)。
     /// エリア1(x=0〜135) → 遷移扉 → エリア2(x=200〜310) の2エリア構成。
     /// [エリア1]
-    /// ① 穴あき道: 2 / 2.5 / 3m の穴を跳んで渡る(落ちたら奈落死→リスポン)
+    /// ① 穴あき道: 2 / 2.5 / 3m の穴を跳んで渡る。最初の2m穴だけは「安全穴」
+    ///    (地面が残っていて落ちても死なず、登って復帰できる。法則D: 穴の安全な初登場)
     /// ② 三層分岐: 上の道はz=7 / z=14〜18の別レーンを走らせ、本筋の頭上に道を置かない
-    ///    (頭上に道があるとその下でジャンプできないため。真上に来るのは入口と合流の先端だけ)
-    ///    - 丘(y1.5)から前方ジャンプで2段目(y3.5)へ。2段目は飛び石をスキップして
-    ///      ゴール前平地の上空で終わり、飛び降りて合流(上下分離型の合流)
-    ///    - 2段目の中程のこぶから前方上へ跳ぶと3段目。3段目は逆向きSplineで
+    ///    - 丘(y3.0)から前方3m・+2.0mジャンプで2段目(y5.0)へ。入口の直下は「窪地」
+    ///      (道に穴・地面は残す)にして、頭上クリアランス4.55mの確保と分岐失敗の受け皿を兼ねる
+    ///    - 2段目はゴール前平地の上空(y4.7)で終わり、飛び降りて合流(上下分離型・一方通行)
+    ///    - 2段目のこぶ(y7.0)から前方3m・+2.4mで3段目(y9.4〜10.5)。逆向きSplineで
     ///      t=1.0側から乗る検証を兼ねる。裏ゴールで行き止まり
     /// ③ 高低差の飛び石(1段目のみ): 低→中→高→中→低。登りは3m間隔、下りは4m間隔
-    /// [エリア2] 穴あき3連 → 丘から上レーン分岐(穴2つをスキップ) → 飛び降り合流 → ゴール
+    /// [エリア2] 穴あき3連 → 丘(y3.0)から上レーン分岐(穴2つをスキップ) → 飛び降り合流 → ゴール
     /// 寸法はジャンプ性能(跳頂3.34m/飛距離限界4.5m)から逆算。
+    /// 頭上クリアランスは最低3.4m(跳頂超)を全直上区間で確保する(アンチパターン#1)。
+    /// 穴・トリガーの位置は設計座標(x)で指定し、弧長(railZ)へ変換して適用する。
     /// イベント: StageDefinition + AreaTrigger一式を配線済み
     ///  - エリア1末尾(x132)の扉でエリア2へ遷移。ゴール(x298)/ステージ出口(x304)はエリア2の末尾
     ///  - 裏ゴール(3段目高台) / 中間地点(エリア1 x78・エリア2入口 x204)
@@ -32,7 +36,7 @@ namespace Rail.EditorTools
     public static class Stage1Creator
     {
         const string RequestMarkerPath = "Library/create_stage1_request";
-        const string ScenePath = "Assets/Scenes/Stage1.unity";
+        const string ScenePath = "Assets/Scenes/World1_Stage1.unity";
         const string EnemyPrefabPath = "Assets/Prefabs/Enemy.prefab";
         const string CharacterTestScenePath = "Assets/Scenes/CharacterTestScene.unity";
 
@@ -56,10 +60,11 @@ namespace Rail.EditorTools
             {
                 new Vector3(0.0f, 0.0f, 0.0f),
                 new Vector3(14.0f, 0.0f, 0.0f),
-                new Vector3(44.0f, 0.0f, 0.0f),
-                new Vector3(47.5f, 1.5f, 0.0f),   // 丘(2段目への踏切)
-                new Vector3(55.0f, 1.5f, 0.0f),   // 丘の縁(ここから前方3m・+2mを跳ぶ)
-                new Vector3(58.0f, 0.0f, 0.0f),   // 2段目の下へ(頭上2.7m)
+                new Vector3(41.0f, 0.0f, 0.0f),
+                new Vector3(48.0f, 3.0f, 0.0f),   // 丘(2段目への踏切)。y3.0で入口の頭上クリアランスを確保
+                new Vector3(55.0f, 3.0f, 0.0f),   // 丘の縁(ここから前方3m・+2.0mを跳ぶ)
+                new Vector3(58.0f, 0.3f, 0.0f),   // 窪地(x55.5〜60.5は道なし。失敗したら草地に着地)
+                new Vector3(61.0f, 0.0f, 0.0f),
                 new Vector3(80.0f, 0.0f, 0.0f),
                 new Vector3(89.5f, 1.5f, 0.0f),   // 飛び石: 中
                 new Vector3(97.5f, 3.0f, 0.0f),   // 飛び石: 高
@@ -75,16 +80,16 @@ namespace Rail.EditorTools
             // 端点を本筋に接触させると最近傍判定に吸い付かれるため、分岐と同じ形で終わらせる
             var middle = CreateSpline("Stage1MiddleSpline", new[]
             {
-                new Vector3(58.0f, 3.5f, 0.0f),   // 入口(丘の縁から3m先・+2m)。ここだけ本筋の真上
-                new Vector3(65.0f, 3.5f, 7.0f),   // すぐ奥のレーンへ逃がす
-                new Vector3(71.0f, 3.6f, 7.0f),
-                new Vector3(74.0f, 5.0f, 7.0f),   // 3段目への踏切(こぶ)
-                new Vector3(77.0f, 5.0f, 7.0f),   // こぶの縁(ここから前方3m・+2.4mを跳ぶと3段目)
-                new Vector3(80.0f, 3.5f, 7.0f),
-                new Vector3(96.0f, 3.4f, 7.0f),
-                new Vector3(112.0f, 3.3f, 7.0f),
-                new Vector3(118.0f, 3.25f, 4.0f), // 合流のときだけ本筋へ寄る
-                new Vector3(122.0f, 3.2f, 0.0f),  // 本筋のゴール前平地の上空で終わる(飛び降り合流)
+                new Vector3(58.0f, 5.0f, 0.0f),   // 入口(丘の縁から3m先・+2.0m)。ここだけ本筋(窪地)の真上
+                new Vector3(65.0f, 5.0f, 7.0f),   // すぐ奥のレーンへ逃がす
+                new Vector3(71.0f, 5.1f, 7.0f),
+                new Vector3(74.0f, 7.0f, 7.0f),   // 3段目への踏切(こぶ)。y7.0で3段目入口の頭上3.6mを確保
+                new Vector3(77.0f, 7.0f, 7.0f),   // こぶの縁(ここから前方3m・+2.4mを跳ぶと3段目)
+                new Vector3(80.0f, 5.0f, 7.0f),
+                new Vector3(96.0f, 4.9f, 7.0f),
+                new Vector3(112.0f, 4.8f, 7.0f),
+                new Vector3(118.0f, 4.75f, 4.0f), // 合流のときだけ本筋へ寄る
+                new Vector3(122.0f, 4.7f, 0.0f),  // 本筋のゴール前平地の上空で終わる(飛び降り合流)
             });
 
             // --- 3段目(逆向きSpline) ---
@@ -93,12 +98,12 @@ namespace Rail.EditorTools
             // z=14〜18の奥レーンを走らせ、本筋や丘の頭上には被せない。裏ゴールの高台で行き止まり
             var top = CreateSpline("Stage1TopSpline", new[]
             {
-                new Vector3(22.0f, 8.5f, 18.0f),  // t=0: 裏ゴール(行き止まりの高台)
-                new Vector3(34.0f, 8.3f, 18.0f),
-                new Vector3(48.0f, 8.0f, 16.0f),
-                new Vector3(62.0f, 7.8f, 14.0f),
-                new Vector3(76.0f, 7.5f, 11.0f),
-                new Vector3(80.0f, 7.4f, 7.5f),   // t=1: 入口(2段目のこぶの縁から3m先・+2.4m)
+                new Vector3(22.0f, 10.5f, 18.0f), // t=0: 裏ゴール(行き止まりの高台)
+                new Vector3(34.0f, 10.3f, 18.0f),
+                new Vector3(48.0f, 10.1f, 16.0f),
+                new Vector3(62.0f, 9.9f, 14.0f),
+                new Vector3(76.0f, 9.6f, 11.0f),
+                new Vector3(80.0f, 9.4f, 7.5f),   // t=1: 入口(2段目のこぶの縁から3m先・+2.4m)
             });
 
             // --- 2エリア目(x=200〜) ---
@@ -109,9 +114,10 @@ namespace Rail.EditorTools
                 new Vector3(200.0f, 0.0f, 0.0f),
                 new Vector3(216.0f, 0.0f, 0.0f),
                 new Vector3(240.0f, 0.0f, 0.0f),
-                new Vector3(243.5f, 1.5f, 0.0f),  // 丘(上レーンへの踏切)
-                new Vector3(251.0f, 1.5f, 0.0f),  // 丘の縁(ここから前方3m・+2mを跳ぶ)
-                new Vector3(254.0f, 0.0f, 0.0f),
+                new Vector3(247.0f, 3.0f, 0.0f),  // 丘(上レーンへの踏切)。y3.0はエリア1と同じ理由
+                new Vector3(251.0f, 3.0f, 0.0f),  // 丘の縁(ここから前方3m・+2.0mを跳ぶ)
+                new Vector3(254.0f, 0.3f, 0.0f),  // 窪地(x251.5〜256.5は道なし)
+                new Vector3(257.0f, 0.0f, 0.0f),
                 new Vector3(276.0f, 0.0f, 0.0f),
                 new Vector3(296.0f, 0.0f, 0.0f),
                 new Vector3(310.0f, 0.0f, 0.0f),  // ゴール平地
@@ -119,11 +125,11 @@ namespace Rail.EditorTools
 
             var sub2 = CreateSpline("Stage2SubSpline", new[]
             {
-                new Vector3(254.0f, 3.5f, 0.0f),  // 入口(丘の縁から3m先・+2m)。ここだけ本筋の真上
-                new Vector3(261.0f, 3.5f, 7.0f),  // すぐ奥のレーンへ逃がす
-                new Vector3(275.0f, 3.4f, 7.0f),
-                new Vector3(287.0f, 3.3f, 5.0f),
-                new Vector3(291.0f, 3.2f, 0.0f),  // ゴール平地の上空で終わる(飛び降り合流)
+                new Vector3(254.0f, 5.0f, 0.0f),  // 入口(丘の縁から3m先・+2.0m)。ここだけ本筋(窪地)の真上
+                new Vector3(261.0f, 5.0f, 7.0f),  // すぐ奥のレーンへ逃がす
+                new Vector3(275.0f, 4.9f, 7.0f),
+                new Vector3(287.0f, 4.8f, 5.0f),
+                new Vector3(291.0f, 4.7f, 0.0f),  // ゴール平地の上空で終わる(飛び降り合流)
             });
 
             Debug.Log("[Stage1Creator] Splineを生成しました。Stage Auto Builderを実行します。");
@@ -182,11 +188,16 @@ namespace Rail.EditorTools
             var roadMaterial = theme != null ? theme.roadMaterial : null;
 
             // --- 道を敷く(幅・厚みはジャンプ性能のスケール感に合わせる) ---
-            // メイン道: ①の穴 + ③の飛び石の間に穴を開ける(railZ範囲)
-            var mainHoles = new[]
+            // 穴はx座標で指定し、弧長(railZ)へ変換してから開ける(丘の勾配で1m前後ズレるため)。
+            // 「安全穴」= 道だけ開けて地面は残す穴。落ちても草地(y-0.35)に着地し、登って復帰できる
+            var mainSafeHolesX = new[]
             {
-                new Vector2(16.0f, 18.0f),    // ① 2.0m
-                new Vector2(24.0f, 26.5f),    // ① 2.5m
+                new Vector2(16.0f, 18.0f),    // ① 2.0m: 穴の初登場は死なない形で見せる(法則D)
+                new Vector2(55.5f, 60.5f),    // 分岐入口下の窪地(失敗の受け皿+頭上クリアランス4.55m)
+            };
+            var mainDeadlyHolesX = new[]
+            {
+                new Vector2(24.0f, 26.5f),    // ① 2.5m(ここから本番の谷)
                 new Vector2(33.0f, 36.0f),    // ① 3.0m
                 new Vector2(84.5f, 87.5f),    // ③ 登り3m
                 new Vector2(92.5f, 95.5f),    // ③ 登り3m
@@ -194,7 +205,8 @@ namespace Rail.EditorTools
                 new Vector2(110.0f, 114.0f),  // ③ 下り4m
             };
             var mainRoad = StageGeometryUtility.LayCubes(
-                main, 2.0f, 6.0f, 0.8f, true, parent, mainHoles, roadMaterial);
+                main, 2.0f, 6.0f, 0.8f, true, parent,
+                HolesAtX(main, Concat(mainSafeHolesX, mainDeadlyHolesX)), roadMaterial);
             Undo.AddComponent<GeneratedStageContent>(mainRoad);
 
             // 2段目・3段目: 通常コリジョンの道(すり抜けは不使用。乗り口は互い違い配置で
@@ -213,7 +225,8 @@ namespace Rail.EditorTools
                 // 大地: メインルート沿いに広い地面を敷く。道の穴は少し広めに裂いて「谷」にする
                 if (theme.generateGround)
                 {
-                    var groundHoles = PadHoles(mainHoles, theme.groundHolePadding);
+                    // 地面の穴(谷)は死の穴だけ。安全穴・窪地の下には地面を残す
+                    var groundHoles = PadHoles(HolesAtX(main, mainDeadlyHolesX), theme.groundHolePadding);
                     var ground = StageGeometryUtility.GenerateGroundRibbon(
                         main, theme.groundWidth, -0.35f, groundHoles, theme.groundMaterial, parent,
                         theme.cliffMaterial, theme.cliffDepth);
@@ -261,11 +274,12 @@ namespace Rail.EditorTools
                 cameraSo.ApplyModifiedProperties();
             }
 
-            // 敵を配置(地上序盤・ゴール手前、2段目に1体)
+            // 敵を配置(地上中盤・ゴール手前、2段目に1体)。
+            // 合流点(x122)の直下±数mには置かない(アンチパターン#3)
             if (enemyPrefab != null)
             {
-                PlaceEnemy(enemyPrefab, main, 0.55f, parent);
-                PlaceEnemy(enemyPrefab, main, 0.92f, parent);
+                PlaceEnemy(enemyPrefab, main, TAtX(main, 74.0f), parent);
+                PlaceEnemy(enemyPrefab, main, TAtX(main, 128.0f), parent);
                 PlaceEnemy(enemyPrefab, middle, 0.5f, parent);
             }
             else
@@ -274,16 +288,22 @@ namespace Rail.EditorTools
             }
 
             // --- エリア2の道を敷く(穴あき3連 → 丘から上レーンへ分岐) ---
-            var main2Holes = new[]
+            // エリア2は応用編のため安全穴なし(窪地のみ)。穴はワールドx座標で指定
+            var main2SafeHolesX = new[]
             {
-                new Vector2(6.0f, 8.0f),      // 2.0m
-                new Vector2(22.0f, 24.5f),    // 2.5m
-                new Vector2(30.0f, 33.0f),    // 3.0m
-                new Vector2(62.5f, 65.5f),    // 3.0m
-                new Vector2(74.5f, 78.5f),    // 4.0m(上レーンを選べば跳ばずに済む)
+                new Vector2(251.5f, 256.5f),  // 分岐入口下の窪地
+            };
+            var main2DeadlyHolesX = new[]
+            {
+                new Vector2(206.0f, 208.0f),  // 2.0m
+                new Vector2(222.0f, 224.5f),  // 2.5m
+                new Vector2(230.0f, 233.0f),  // 3.0m
+                new Vector2(262.5f, 265.5f),  // 3.0m
+                new Vector2(274.5f, 278.5f),  // 4.0m(上レーンを選べば跳ばずに済む)
             };
             var main2Road = StageGeometryUtility.LayCubes(
-                main2, 2.0f, 6.0f, 0.8f, true, parent2, main2Holes, roadMaterial);
+                main2, 2.0f, 6.0f, 0.8f, true, parent2,
+                HolesAtX(main2, Concat(main2SafeHolesX, main2DeadlyHolesX)), roadMaterial);
             Undo.AddComponent<GeneratedStageContent>(main2Road);
 
             var sub2Road = StageGeometryUtility.LayCubes(
@@ -295,7 +315,7 @@ namespace Rail.EditorTools
             {
                 if (theme.generateGround)
                 {
-                    var main2GroundHoles = PadHoles(main2Holes, theme.groundHolePadding);
+                    var main2GroundHoles = PadHoles(HolesAtX(main2, main2DeadlyHolesX), theme.groundHolePadding);
                     var ground2 = StageGeometryUtility.GenerateGroundRibbon(
                         main2, theme.groundWidth, -0.35f, main2GroundHoles, theme.groundMaterial, parent2,
                         theme.cliffMaterial, theme.cliffDepth);
@@ -317,11 +337,11 @@ namespace Rail.EditorTools
                 Undo.AddComponent<GeneratedStageContent>(sub2Deco);
             }
 
-            // エリア2にも敵を配置
+            // エリア2にも敵を配置。合流点(x291)の直下±数mを避ける(アンチパターン#3)
             if (enemyPrefab != null)
             {
-                PlaceEnemy(enemyPrefab, main2, 0.3f, parent2);
-                PlaceEnemy(enemyPrefab, main2, 0.85f, parent2);
+                PlaceEnemy(enemyPrefab, main2, TAtX(main2, 238.0f), parent2);
+                PlaceEnemy(enemyPrefab, main2, TAtX(main2, 296.0f), parent2);
                 PlaceEnemy(enemyPrefab, sub2, 0.5f, parent2);
             }
 
@@ -338,14 +358,14 @@ namespace Rail.EditorTools
 
             // スポーン/復帰地点はエリア休眠の影響を受けないようルート直下に置く
             var bonusSpawn = CreateAnchor("BonusSpawnPoint", bonusSpline, 0.1f, rootTransform);
-            var bonusReturn = CreateAnchor("BonusReturnPoint", main, TAtDistance(main, 70.0f), rootTransform);
+            var bonusReturn = CreateAnchor("BonusReturnPoint", main, TAtX(main, 70.0f), rootTransform);
 
             // --- イベントトリガー一式 ---
             var triggers = new List<AreaTrigger>();
 
             // 通常ゴール(エリア2の終端手前)
             var goalTrigger = CreateEventTrigger(
-                "Goal", main2, TAtDistance(main2, 98.0f), new Vector3(6.0f, 4.0f, 0.5f), 0.0f, parent2);
+                "Goal", main2, TAtX(main2, 298.0f), new Vector3(6.0f, 4.0f, 0.5f), 0.0f, parent2);
             WireTriggerInfo(goalTrigger, Undo.AddComponent<GoalInfo>(goalTrigger.gameObject));
             triggers.Add(goalTrigger);
 
@@ -361,9 +381,9 @@ namespace Rail.EditorTools
 
             // 中間地点(飛び石の手前 x=78)
             var checkpointRespawn = CreateAnchor(
-                "CheckpointRespawn", main, TAtDistance(main, 78.0f), rootTransform);
+                "CheckpointRespawn", main, TAtX(main, 78.0f), rootTransform);
             var checkpointTrigger = CreateEventTrigger(
-                "Checkpoint", main, TAtDistance(main, 78.0f), new Vector3(6.0f, 4.0f, 0.5f), 0.0f, parent);
+                "Checkpoint", main, TAtX(main, 78.0f), new Vector3(6.0f, 4.0f, 0.5f), 0.0f, parent);
             var checkpointInfo = Undo.AddComponent<CheckPointInfo>(checkpointTrigger.gameObject);
             var checkpointSo = new SerializedObject(checkpointInfo);
             checkpointSo.FindProperty("checkPointId").stringValue = "cp-01";
@@ -374,7 +394,7 @@ namespace Rail.EditorTools
 
             // 隠し部屋の入口(x=70の頭上。ジャンプしないと触れない高さ)
             var bonusEntryTrigger = CreateEventTrigger(
-                "BonusEntry", main, TAtDistance(main, 70.0f), new Vector3(2.5f, 1.5f, 1.5f), 2.6f, parent);
+                "BonusEntry", main, TAtX(main, 70.0f), new Vector3(2.5f, 1.5f, 1.5f), 2.6f, parent);
             var bonusEntryInfo = Undo.AddComponent<AreaTransitionInfo>(bonusEntryTrigger.gameObject);
             var bonusEntrySo = new SerializedObject(bonusEntryInfo);
             bonusEntrySo.FindProperty("destinationArea").objectReferenceValue = bonusArea;
@@ -382,6 +402,10 @@ namespace Rail.EditorTools
             bonusEntrySo.ApplyModifiedProperties();
             WireTriggerInfo(bonusEntryTrigger, bonusEntryInfo);
             triggers.Add(bonusEntryTrigger);
+
+            // 隠し部屋入口のヒント(法則F: 視覚的な違和感で気づかせる)。
+            // 用途のない浮遊ブロックを頭上トリガーの下に置く。乗って跳べばトリガーに届く
+            CreateHintBlock(main, 70.0f, 1.3f, roadMaterial, parent);
 
             // 隠し部屋の出口(部屋の奥) → 本筋へ戻る
             var bonusExitTrigger = CreateEventTrigger(
@@ -395,11 +419,11 @@ namespace Rail.EditorTools
             triggers.Add(bonusExitTrigger);
 
             // エリア2開始地点アンカー(ルート直下=エリア休眠の影響を受けない場所)
-            var area2Start = CreateAnchor("Area2StartPoint", main2, TAtDistance(main2, 2.0f), rootTransform);
+            var area2Start = CreateAnchor("Area2StartPoint", main2, TAtX(main2, 202.0f), rootTransform);
 
             // エリア1→2の遷移扉(エリア1末尾の扉からエリア2開始地点へ)
             var toArea2Trigger = CreateEventTrigger(
-                "ToArea2", main, TAtDistance(main, 132.0f), new Vector3(6.0f, 4.0f, 0.5f), 0.0f, parent);
+                "ToArea2", main, TAtX(main, 132.0f), new Vector3(6.0f, 4.0f, 0.5f), 0.0f, parent);
             var toArea2Info = Undo.AddComponent<AreaTransitionInfo>(toArea2Trigger.gameObject);
             var toArea2So = new SerializedObject(toArea2Info);
             toArea2So.FindProperty("destinationArea").objectReferenceValue = area2;
@@ -410,7 +434,7 @@ namespace Rail.EditorTools
 
             // 中間地点cp-02(エリア2に入った直後に必ず踏ませて、リスポン先をエリア2側へ更新する)
             var checkpoint2Trigger = CreateEventTrigger(
-                "Checkpoint2", main2, TAtDistance(main2, 4.0f), new Vector3(6.0f, 4.0f, 0.5f), 0.0f, parent2);
+                "Checkpoint2", main2, TAtX(main2, 204.0f), new Vector3(6.0f, 4.0f, 0.5f), 0.0f, parent2);
             var checkpoint2Info = Undo.AddComponent<CheckPointInfo>(checkpoint2Trigger.gameObject);
             var checkpoint2So = new SerializedObject(checkpoint2Info);
             checkpoint2So.FindProperty("checkPointId").stringValue = "cp-02";
@@ -421,7 +445,7 @@ namespace Rail.EditorTools
 
             // ステージ出口(ゴールのさらに先。仮配置)
             var exitTrigger = CreateEventTrigger(
-                "StageExit", main2, TAtDistance(main2, 104.0f), new Vector3(6.0f, 4.0f, 0.5f), 0.0f, parent2);
+                "StageExit", main2, TAtX(main2, 304.0f), new Vector3(6.0f, 4.0f, 0.5f), 0.0f, parent2);
             WireTriggerInfo(exitTrigger, Undo.AddComponent<StageExitInfo>(exitTrigger.gameObject));
             triggers.Add(exitTrigger);
 
@@ -434,25 +458,18 @@ namespace Rail.EditorTools
             var spawnPointGo = GameObject.Find("SpawnPoint");
             var spawnAnchor = spawnPointGo != null ? spawnPointGo.GetComponent<SplineAnchor>() : null;
 
+            SetAreaStartPoint(area1, spawnAnchor);
+            SetAreaStartPoint(bonusArea, bonusSpawn);
+            SetAreaStartPoint(area2, area2Start);
+
+            // エリア・トリガーの操作窓口はStageView。Definitionは初期エリアとViewの在り処だけ持つ
+            var stageView = root != null ? root.GetComponent<StageView>() : null;
+            WireStageView(stageView, new[] { area1, bonusArea, area2 }, triggers);
+
             var definitionSo = new SerializedObject(definition);
             definitionSo.FindProperty("initialArea").objectReferenceValue = area1;
-            definitionSo.FindProperty("startPoint").objectReferenceValue = spawnAnchor;
-            var triggersProperty = definitionSo.FindProperty("areaTriggers");
-            triggersProperty.arraySize = triggers.Count;
-            for (var i = 0; i < triggers.Count; i++)
-            {
-                triggersProperty.GetArrayElementAtIndex(i).objectReferenceValue = triggers[i];
-            }
+            definitionSo.FindProperty("view").objectReferenceValue = stageView;
             definitionSo.ApplyModifiedProperties();
-
-            // StageFlowManagerへ定義を配線
-            var flowManager = Object.FindAnyObjectByType<StageFlowManager>();
-            if (flowManager != null)
-            {
-                var flowSo = new SerializedObject(flowManager);
-                flowSo.FindProperty("stageDefinition").objectReferenceValue = definition;
-                flowSo.ApplyModifiedProperties();
-            }
 
             // エリア2とボーナス部屋は初期休眠
             bonusContents.SetActive(false);
@@ -495,6 +512,13 @@ namespace Rail.EditorTools
             so.ApplyModifiedProperties();
 
             return area;
+        }
+
+        static void SetAreaStartPoint(StageArea area, SplineAnchor startPoint)
+        {
+            var so = new SerializedObject(area);
+            so.FindProperty("startPoint").objectReferenceValue = startPoint;
+            so.ApplyModifiedProperties();
         }
 
         /// <summary>
@@ -557,12 +581,109 @@ namespace Rail.EditorTools
         }
 
         /// <summary>
-        /// レール距離(m)をSplineのt値へ変換する。
+        /// StageViewへ全エリアと全トリガーを配線する。
         /// </summary>
-        static float TAtDistance(SplineContainer container, float distance)
+        static void WireStageView(StageView view, IReadOnlyList<StageArea> areas, IReadOnlyList<AreaTrigger> triggers)
+        {
+            if (view == null)
+            {
+                Debug.LogError("[Stage1Creator] StageView not found on GeneratedStage.");
+                return;
+            }
+
+            var so = new SerializedObject(view);
+
+            var areasProperty = so.FindProperty("areas");
+            areasProperty.arraySize = areas.Count;
+            for (var i = 0; i < areas.Count; i++)
+            {
+                areasProperty.GetArrayElementAtIndex(i).objectReferenceValue = areas[i];
+            }
+
+            var triggersProperty = so.FindProperty("areaTriggers");
+            triggersProperty.arraySize = triggers.Count;
+            for (var i = 0; i < triggers.Count; i++)
+            {
+                triggersProperty.GetArrayElementAtIndex(i).objectReferenceValue = triggers[i];
+            }
+
+            so.ApplyModifiedProperties();
+        }
+
+        /// <summary>
+        /// x座標からSplineのt値を求める(xが単調なSpline用の二分探索)。
+        /// 穴・トリガーの位置を設計座標(x)のまま指定するための逆引き。
+        /// </summary>
+        static float TAtX(SplineContainer container, float x)
+        {
+            float t0 = 0.0f;
+            float t1 = 1.0f;
+            bool increasing = container.EvaluatePosition(1.0f).x >= container.EvaluatePosition(0.0f).x;
+            for (var i = 0; i < 40; i++)
+            {
+                float tm = (t0 + t1) * 0.5f;
+                float xm = container.EvaluatePosition(tm).x;
+                if ((xm < x) == increasing) t0 = tm; else t1 = tm;
+            }
+            return Mathf.Clamp01((t0 + t1) * 0.5f);
+        }
+
+        /// <summary>
+        /// x座標をレール距離(railZ)へ変換する。
+        /// 丘の勾配で弧長がx差より伸びるため、railZ指定のAPIへ渡す前に必ず変換する。
+        /// </summary>
+        static float RailZAtX(SplineContainer container, float x)
         {
             return container.Spline.ConvertIndexUnit(
-                distance, PathIndexUnit.Distance, PathIndexUnit.Normalized);
+                TAtX(container, x), PathIndexUnit.Normalized, PathIndexUnit.Distance);
+        }
+
+        /// <summary>
+        /// x座標の範囲リストをレール距離(railZ)の範囲へ変換する(道の穴あけ用)。
+        /// </summary>
+        static Vector2[] HolesAtX(SplineContainer container, Vector2[] xRanges)
+        {
+            var result = new Vector2[xRanges.Length];
+            for (var i = 0; i < xRanges.Length; i++)
+            {
+                result[i] = new Vector2(
+                    RailZAtX(container, xRanges[i].x),
+                    RailZAtX(container, xRanges[i].y));
+            }
+            return result;
+        }
+
+        static Vector2[] Concat(Vector2[] a, Vector2[] b)
+        {
+            var result = new Vector2[a.Length + b.Length];
+            a.CopyTo(result, 0);
+            b.CopyTo(result, a.Length);
+            return result;
+        }
+
+        /// <summary>
+        /// 隠し要素の位置を示す浮遊ブロックを置く(乗れる足場。Terrainレイヤー)。
+        /// </summary>
+        static void CreateHintBlock(
+            SplineContainer target, float x, float height, Material material, Transform parent)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = "BonusHintBlock";
+            Undo.RegisterCreatedObjectUndo(go, "Create Stage1");
+            go.transform.SetParent(parent);
+
+            Vector3 pos = (Vector3)target.EvaluatePosition(TAtX(target, x));
+            go.transform.position = new Vector3(pos.x, height, pos.z);
+            go.transform.localScale = new Vector3(1.4f, 0.35f, 1.4f);
+            go.layer = LayerMask.NameToLayer("Terrain");
+
+            var renderer = go.GetComponent<Renderer>();
+            if (material != null && renderer != null)
+            {
+                renderer.sharedMaterial = material;
+            }
+
+            Undo.AddComponent<GeneratedStageContent>(go);
         }
 
         /// <summary>
