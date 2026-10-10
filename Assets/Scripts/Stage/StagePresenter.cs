@@ -1,9 +1,10 @@
 using System;
+using System.Threading;
 using VContainer;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UniRx;
-using System.Linq;
+
 
 namespace Rail
 {
@@ -12,6 +13,8 @@ namespace Rail
         readonly StageLoader stageLoader = null;
         readonly StageModel stageModel = null;
         readonly StageEventBus stageEventBus = null;
+        readonly IPlayerEventBus playerEventBus = null;
+        readonly ScreenTransition screenTransition = null;
         readonly CompositeDisposable disposables = new();
 
         StageDefinition stageDefinition = null;
@@ -21,17 +24,31 @@ namespace Rail
             StageRequest stageRequest,
             StageLoader stageLoader,
             StageModel stageModel,
-            StageEventBus stageEventBus)
+            StageEventBus stageEventBus,
+            IPlayerEventBus playerEventBus,
+            ScreenTransition screenTransition)
         {
             this.stageLoader = stageLoader;
             this.stageModel = stageModel;
             this.stageEventBus = stageEventBus;
-
-            this.stageEventBus
-                .OnAreaTriggerObservable()
+            this.playerEventBus = playerEventBus;
+            this.screenTransition = screenTransition;
+            
+            // エリア内Trigger
+            this.stageEventBus.OnAreaTriggerObservable()
                 .Subscribe(HandleAreaEvent)
                 .AddTo(this.disposables);
 
+            // 残機減った通知
+            this.playerEventBus.OnLifeConsumedObservable()
+                .Subscribe(_ =>
+                {
+                    this.stageDefinition.View.ResetEnemies();
+                    this.stageEventBus.PublishRespawnRequest(this.stageModel.Entity.SpawnPoint);
+                })
+                .AddTo(this.disposables);
+
+            // 選択したステージを読み込み
             LoadStageAsync(stageRequest).Forget();
         }
 

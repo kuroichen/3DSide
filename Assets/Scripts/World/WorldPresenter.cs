@@ -12,6 +12,7 @@ namespace Rail
         SceneLoader sceneLoader = null;
         WorldLoader worldLoader = null;
         WorldView worldView = null;
+        ScreenTransition screenTransition = null;
 
         CompositeDisposable disposables = new();
 
@@ -19,15 +20,17 @@ namespace Rail
         public WorldPresenter(
             WorldLoader worldLoader,
             WorldView worldView,
-            SceneLoader sceneLoader)
+            SceneLoader sceneLoader,
+            ScreenTransition screenTransition)
         {
             this.worldLoader = worldLoader;
             this.worldView = worldView;
             this.sceneLoader = sceneLoader;
+            this.screenTransition = screenTransition;
 
             this.worldView.OnClickAsObservable()
                 .Select(stageId => new StageRequest(WorldId.World1, stageId))
-                .Subscribe(request => this.OpenStageAsync(request).Forget())
+                .Subscribe(request => this.OpenStageSceneAsync(request).Forget())
                 .AddTo(this.disposables);
         }
         void IDisposable.Dispose()
@@ -35,8 +38,11 @@ namespace Rail
             this.disposables.Dispose();
         }
 
-        private async UniTask OpenStageAsync(StageRequest request)
+        private async UniTask OpenStageSceneAsync(StageRequest request)
         {
+            // 暗転
+            await this.screenTransition.FadeOut();
+
             using (LifetimeScope.Enqueue(
                 builder =>
                 {

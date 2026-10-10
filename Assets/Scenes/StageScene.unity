@@ -170,6 +170,8 @@ MonoBehaviour:
   autoInjectGameObjects: []
   playerPrefab: {fileID: 6940431802523529980, guid: 960c74b42988944af8884a5926d91cfc, type: 3}
   followCamera: {fileID: 1782515922}
+  playerStatus: {fileID: 11400000, guid: beff10841765641759de3ab18cdd3d4b, type: 2}
+  initialLives: 2
 --- !u!1 &1782515921
 GameObject:
   m_ObjectHideFlags: 0
