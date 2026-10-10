@@ -274,13 +274,15 @@ namespace Rail.EditorTools
                 cameraSo.ApplyModifiedProperties();
             }
 
-            // 敵を配置(地上中盤・ゴール手前、2段目に1体)。
+            // 敵の出現地点を配置(地上中盤・ゴール手前、2段目に1体)。実体は実行時にStageAreaが生成する。
             // 合流点(x122)の直下±数mには置かない(アンチパターン#3)
+            var area1EnemySpawns = new List<EnemySpawnPoint>();
+            var area2EnemySpawns = new List<EnemySpawnPoint>();
             if (enemyPrefab != null)
             {
-                PlaceEnemy(enemyPrefab, main, TAtX(main, 74.0f), parent);
-                PlaceEnemy(enemyPrefab, main, TAtX(main, 128.0f), parent);
-                PlaceEnemy(enemyPrefab, middle, 0.5f, parent);
+                area1EnemySpawns.Add(CreateEnemySpawnPoint(enemyPrefab, main, TAtX(main, 74.0f), parent));
+                area1EnemySpawns.Add(CreateEnemySpawnPoint(enemyPrefab, main, TAtX(main, 128.0f), parent));
+                area1EnemySpawns.Add(CreateEnemySpawnPoint(enemyPrefab, middle, 0.5f, parent));
             }
             else
             {
@@ -337,12 +339,12 @@ namespace Rail.EditorTools
                 Undo.AddComponent<GeneratedStageContent>(sub2Deco);
             }
 
-            // エリア2にも敵を配置。合流点(x291)の直下±数mを避ける(アンチパターン#3)
+            // エリア2にも敵の出現地点を配置。合流点(x291)の直下±数mを避ける(アンチパターン#3)
             if (enemyPrefab != null)
             {
-                PlaceEnemy(enemyPrefab, main2, TAtX(main2, 238.0f), parent2);
-                PlaceEnemy(enemyPrefab, main2, TAtX(main2, 296.0f), parent2);
-                PlaceEnemy(enemyPrefab, sub2, 0.5f, parent2);
+                area2EnemySpawns.Add(CreateEnemySpawnPoint(enemyPrefab, main2, TAtX(main2, 238.0f), parent2));
+                area2EnemySpawns.Add(CreateEnemySpawnPoint(enemyPrefab, main2, TAtX(main2, 296.0f), parent2));
+                area2EnemySpawns.Add(CreateEnemySpawnPoint(enemyPrefab, sub2, 0.5f, parent2));
             }
 
             // --- ボーナス部屋(エリア切替のデモ。z+70の離れた場所にある安全な小部屋) ---
@@ -461,6 +463,9 @@ namespace Rail.EditorTools
             SetAreaStartPoint(area1, spawnAnchor);
             SetAreaStartPoint(bonusArea, bonusSpawn);
             SetAreaStartPoint(area2, area2Start);
+
+            SetAreaEnemySpawnPoints(area1, area1EnemySpawns);
+            SetAreaEnemySpawnPoints(area2, area2EnemySpawns);
 
             // エリア・トリガーの操作窓口はStageView。Definitionは初期エリアとViewの在り処だけ持つ
             var stageView = root != null ? root.GetComponent<StageView>() : null;
@@ -699,37 +704,45 @@ namespace Rail.EditorTools
             return padded;
         }
 
-        static void PlaceEnemy(GameObject prefab, SplineContainer target, float t, Transform parent)
+        /// <summary>
+        /// Spline上に敵の出現地点(SplineAnchor + EnemySpawnPoint)を作成する。
+        /// 敵の実体はシーンに置かず、実行時にStageAreaが生成する。
+        /// </summary>
+        static EnemySpawnPoint CreateEnemySpawnPoint(GameObject prefab, SplineContainer target, float t, Transform parent)
         {
-            Vector3 pos = (Vector3)target.EvaluatePosition(t);
-            Vector3 tan = ((Vector3)target.EvaluateTangent(t));
-            tan.y = 0.0f;
-            Quaternion rot = tan.sqrMagnitude > 0.0001f
-                ? Quaternion.LookRotation(tan.normalized)
-                : Quaternion.identity;
+            var go = new GameObject("EnemySpawnPoint");
+            Undo.RegisterCreatedObjectUndo(go, "Create Enemy Spawn Point");
+            if (parent != null) go.transform.SetParent(parent);
+            go.transform.position = (Vector3)target.EvaluatePosition(t);
 
-            var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-            if (instance == null) return;
+            var anchor = Undo.AddComponent<SplineAnchor>(go);
+            var anchorSo = new SerializedObject(anchor);
+            anchorSo.FindProperty("splineContainer").objectReferenceValue = target;
+            anchorSo.FindProperty("t").floatValue = t;
+            anchorSo.ApplyModifiedProperties();
+            go.transform.rotation = anchor.GetRotation();
 
-            Undo.RegisterCreatedObjectUndo(instance, "Place Enemy");
-            if (parent != null) instance.transform.SetParent(parent);
-            // 道に少し浮かせて配置(CharacterControllerが接地させる)
-            instance.transform.position = pos + Vector3.up * 0.5f;
-            instance.transform.rotation = rot;
+            var spawnPoint = Undo.AddComponent<EnemySpawnPoint>(go);
+            var spawnSo = new SerializedObject(spawnPoint);
+            spawnSo.FindProperty("prefab").objectReferenceValue = prefab.GetComponent<EnemyController>();
+            spawnSo.FindProperty("anchor").objectReferenceValue = anchor;
+            spawnSo.ApplyModifiedProperties();
 
-            var mover = instance.GetComponent<SplineMover>();
-            if (mover != null)
+            Undo.AddComponent<GeneratedStageContent>(go);
+
+            return spawnPoint;
+        }
+
+        static void SetAreaEnemySpawnPoints(StageArea area, IReadOnlyList<EnemySpawnPoint> spawnPoints)
+        {
+            var so = new SerializedObject(area);
+            var property = so.FindProperty("enemySpawnPoints");
+            property.arraySize = spawnPoints.Count;
+            for (var i = 0; i < spawnPoints.Count; i++)
             {
-                var so = new SerializedObject(mover);
-                so.FindProperty("splineContainer").objectReferenceValue = target;
-                so.FindProperty("t").floatValue = t;
-                so.ApplyModifiedProperties();
+                property.GetArrayElementAtIndex(i).objectReferenceValue = spawnPoints[i];
             }
-
-            if (instance.GetComponent<GeneratedStageContent>() == null)
-            {
-                Undo.AddComponent<GeneratedStageContent>(instance);
-            }
+            so.ApplyModifiedProperties();
         }
 
         /// <summary>

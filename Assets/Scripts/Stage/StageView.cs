@@ -16,9 +16,15 @@ namespace Rail
         [SerializeField]
         AreaTrigger[] areaTriggers = null;
 
+        EnemyFactory enemyFactory = null;
+
         [Inject]
-        public void Construct(StageEventBus stageEventBus)
+        public void Construct(
+            StageEventBus stageEventBus,
+            EnemyFactory enemyFactory)
         {
+            this.enemyFactory = enemyFactory;
+
             this.areaTriggers
                 .Select(trigger => trigger.OnEnteredObservable())
                 .Merge()
@@ -42,6 +48,17 @@ namespace Rail
             }
 
             area.SetAreaActive(active);
+        }
+
+        public void ResetEnemies()
+        {
+            foreach (var area in this.areas)
+            {
+                if (area == null) continue;
+
+                area.ClearEnemies();
+                area.SpawnEnemies(this.enemyFactory);
+            }
         }
     }
 }

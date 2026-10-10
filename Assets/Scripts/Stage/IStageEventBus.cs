@@ -1,4 +1,5 @@
 using System;
+using UniRx;
 
 namespace Rail
 {
@@ -13,5 +14,15 @@ namespace Rail
         /// エリア準備完了通知
         /// </summary>
         IObservable<SplineAnchor> OnPreparedObservable();
+
+        /// <summary>
+        /// リスポーン指示通知
+        /// </summary>
+        IObservable<SplineAnchor> OnRespawnRequestObservable();
+
+        /// <summary>
+        /// ゲームオーバー通知
+        /// </summary>
+        IObservable<Unit> OnGameOverObservable();
     }
 }

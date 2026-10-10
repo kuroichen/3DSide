@@ -19,6 +19,7 @@ namespace Rail
             builder.Register<StageLoader>(Lifetime.Scoped);
             builder.Register<StageModel>(Lifetime.Scoped);
             builder.Register<StageDataStore>(Lifetime.Scoped);
+            builder.Register<EnemyFactory>(Lifetime.Scoped);
             builder.Register<StageEventBus>(Lifetime.Scoped)
                 .AsSelf()
                 .As<IStageEventBus>();

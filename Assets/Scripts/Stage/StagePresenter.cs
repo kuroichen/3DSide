@@ -54,6 +54,8 @@ namespace Rail
                 return;
             }
 
+            this.stageDefinition.View.ResetEnemies();
+
             // 初期エリアのセットアップ
             ChangeArea(this.stageDefinition.InitialArea.AreaId, this.stageDefinition.InitialArea.StartPoint);
         }
