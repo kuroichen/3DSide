@@ -22,7 +22,7 @@ GameFlowManager    … ゲーム全体進行。報告を受けて判断し、シ
 
 ## GameFlowManagerの仕様
 
-- **Bootstrap常駐組**([Bootstrap常駐パターン](../learning/08_Bootstrap常駐パターン.md))。シーンをまたいで生きる
+- **RootLifetimeScope常駐組**([RootLifetimeScope常駐パターン](../learning/08_RootLifetimeScope常駐パターン.md))。シーンをまたいで生きる
 - ステート:
 
 | ステート | 意味 | 遷移先 |
@@ -76,7 +76,7 @@ Secret/Fakeゴールの具体挙動はResult実装時に定義する。
 
 ## 実装順
 
-1. GameFlowManagerの骨格(ステートenum + Notify入口2つ + シーンロード)をBootstrapに追加
+1. GameFlowManagerの骨格(ステートenum + Notify入口2つ + シーンロード)をRootLifetimeScopeに登録
 2. StageFlowManagerに `TryRespawn` 戻り値の分岐を追加(ソフトロック解消)
 3. 最小のタイトルシーン(スタートのみ)+ Build Settings整備
 4. GameOver表示(最小: 暗転上にテキスト → 入力でタイトルへ)

@@ -11,7 +11,7 @@ namespace Rail
         
         protected override void Configure(IContainerBuilder builder)
         {
-             builder.RegisterInstance(view);
+             builder.RegisterComponent(view);
 
              builder.Register<WorldLoader>(Lifetime.Singleton);
              builder.RegisterPlainEntryPoint<WorldPresenter>();

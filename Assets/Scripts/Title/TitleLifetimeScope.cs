@@ -11,7 +11,7 @@ namespace Rail
 
         protected override void Configure(IContainerBuilder builder)
         {
-            builder.RegisterInstance<TitleView>(view);
+            builder.RegisterComponent<TitleView>(view);
             builder.RegisterPlainEntryPoint<TitlePresenter>(Lifetime.Singleton);
         }
     }

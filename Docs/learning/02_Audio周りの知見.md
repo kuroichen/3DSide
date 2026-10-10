@@ -11,7 +11,7 @@ AudioMixer (Master)
 └── UI    ← SEプールを共用、再生時にUI Groupへ切り替え
 ```
 
-- Mixer/Group参照は `AudioMixerSettings`(ScriptableObject)にまとめ、`Resources/Audio/` から `GameBootstrap` がロードして注入する。Bootstrap生成物はシーンに置けないため、Inspector参照の代わりにResources経由にした
+- Mixer/Group参照は `AudioMixerSettings`(ScriptableObject)にまとめ、RootLifetimeScopeプレハブ内のAudioManagerの `Mixer Settings` にInspectorで配線する。AudioManagerはAwakeでAudioSourceを生成した後に出力先Groupを設定する([RootLifetimeScope常駐パターン](08_RootLifetimeScope常駐パターン.md))。アセットは `AudioMixerSetupTool` が `Resources/Audio/` に出力するが、`Resources.Load` はもう使っていない
 
 ## AudioResource と AudioClip (Unity 6)
 

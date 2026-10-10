@@ -214,7 +214,7 @@ namespace Rail.EditorTools
             this.enableManagers = EditorGUILayout.ToggleLeft(
                 "⑤ マネージャを生成・配線", this.enableManagers, EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "RailManager / StageFlowManager と、カメラ(SplineFollowCamera)を用意します。" +
+                "RailManager と、カメラ(SplineFollowCamera)を用意します。" +
                 "MainCameraがあればそこにカメラ機能を追加し、無ければStageCameraを新規生成します。",
                 MessageType.None);
 
@@ -585,14 +585,6 @@ namespace Rail.EditorTools
             {
                 CreateManagerObject<RailManager>("RailManager", parent);
                 log.AppendLine("- RailManager: 生成");
-            }
-
-            // StageFlowManager
-            var flowManager = FindAnyObjectByType<StageFlowManager>();
-            if (flowManager == null)
-            {
-                flowManager = CreateManagerObject<StageFlowManager>("StageFlowManager", parent);
-                log.AppendLine("- StageFlowManager: 生成");
             }
 
             // カメラ

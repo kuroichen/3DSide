@@ -22,7 +22,7 @@ namespace Rail
     /// BGM、SE、UI音の再生とAudioMixerの音量を一元管理する。
     /// Sceneをまたいで常駐し、具体的なAudioResourceは利用側から受け取る。
     /// </summary>
-    public class AudioManager : SingletonMonoBehaviour<AudioManager>
+    public class AudioManager : MonoBehaviour
     {
         // 再生APIの既定値。
         const float DEFAULT_FADE_DURATION = 0.5f;
@@ -40,6 +40,9 @@ namespace Rail
         const string UI_VOLUME_PARAMETER = "UIVolume";
 
         [Header("Mixer")]
+        [SerializeField]
+        AudioMixerSettings mixerSettings = null;
+
         [SerializeField]
         AudioMixer audioMixer = null;
 
@@ -73,15 +76,13 @@ namespace Rail
         CancellationTokenSource bgmTransitionCancellation = null;
         int nextSeSourceIndex = 0;
 
-        protected override void Awake()
+        protected void Awake()
         {
-            base.Awake();
-            if (Instance != this) return;
-
-            DontDestroyOnLoad(this.gameObject);
-
             SetupBGMSource();
             SetupSESources();
+
+            // AudioSourceを生成した後に出力先を設定する
+            Initialize(this.mixerSettings);
         }
 
         void OnDestroy()

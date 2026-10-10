@@ -50,4 +50,4 @@
 - [learning/05_TriggerEnterの発動条件.md](learning/05_TriggerEnterの発動条件.md) — 発動条件AND一覧、イベントの届き先、攻撃ウィンドウへの応用
 - [learning/06_UniRxの使い方.md](learning/06_UniRxの使い方.md) — Observable公開パターン、寿命管理、StartWith
 - [learning/07_UniTaskの使い方.md](learning/07_UniTaskの使い方.md) — UniTaskVoid/キャンセル/CompletionSource
-- [learning/08_Bootstrap常駐パターン.md](learning/08_Bootstrap常駐パターン.md) — RuntimeInitializeOnLoadMethodによる常駐サービス起動
+- [learning/08_RootLifetimeScope常駐パターン.md](learning/08_RootLifetimeScope常駐パターン.md) — RootLifetimeScopeによる常駐サービスとRegisterInstance/RegisterComponentの使い分け

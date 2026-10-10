@@ -20,7 +20,7 @@ namespace Rail
         void Start()
         {
             this.playerManager = PlayerManager.Instance;
-            this.screenTransition = ScreenTransition.Instance;
+            this.screenTransition = null;
 
             if (this.playerManager == null)
             {

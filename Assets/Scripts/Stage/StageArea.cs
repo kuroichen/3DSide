@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -71,10 +70,10 @@ namespace Rail
                 if (enemy != null)
                 {
                     Destroy(enemy.gameObject);
-                }
-                
-                this.spawnedEnemies.Clear();
+                }    
             }
+
+            this.spawnedEnemies.Clear();
         }
     }
 }

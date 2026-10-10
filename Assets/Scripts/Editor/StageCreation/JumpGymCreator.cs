@@ -97,7 +97,6 @@ namespace Rail.EditorTools
             cameraSo.ApplyModifiedProperties();
 
             new GameObject("RailManager").AddComponent<RailManager>();
-            new GameObject("StageFlowManager").AddComponent<StageFlowManager>();
 
             var playerManager = new GameObject("PlayerManager").AddComponent<PlayerManager>();
             var managerSo = new SerializedObject(playerManager);

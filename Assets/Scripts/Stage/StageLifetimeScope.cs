@@ -15,7 +15,7 @@ namespace Rail
         protected override void Configure(IContainerBuilder builder)
         {
             // Stage
-            builder.RegisterInstance<SplineFollowCamera>(this.followCamera);
+            builder.RegisterComponent<SplineFollowCamera>(this.followCamera);
             builder.Register<StageLoader>(Lifetime.Scoped);
             builder.Register<StageModel>(Lifetime.Scoped);
             builder.Register<StageDataStore>(Lifetime.Scoped);

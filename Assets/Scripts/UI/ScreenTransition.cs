@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace Rail
 {    
-    public class ScreenTransition : SingletonMonoBehaviour<ScreenTransition>
+    public class ScreenTransition : MonoBehaviour
     {
         [SerializeField]
         Image screen = null;
@@ -13,30 +13,12 @@ namespace Rail
         float defaultDuration = 0.5f;
 
         [SerializeField]
-        bool startBlack = true;
+        bool startBlack = false;
 
-        protected override void Awake()
+        protected void Awake()
         {
-            base.Awake();
-
-            if (Instance != this) return;
-
-            DontDestroyOnLoad(this.gameObject);
-
             SetAlpha(this.startBlack ? 1.0f : 0.0f);
             SetRaycastTarget(this.startBlack);
-        }
-
-        /// <summary>
-        /// Bootstrapからランタイム生成した画面Imageを設定する。
-        /// </summary>
-        public void Initialize(Image screenImage, bool showBlack)
-        {
-            this.screen = screenImage;
-            this.startBlack = showBlack;
-
-            SetAlpha(showBlack ? 1.0f : 0.0f);
-            SetRaycastTarget(showBlack);
         }
 
         /// <summary>
