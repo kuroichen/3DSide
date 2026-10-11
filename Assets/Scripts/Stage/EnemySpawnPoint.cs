@@ -6,13 +6,13 @@ namespace Rail
     public sealed class EnemySpawnPoint : MonoBehaviour
     {
         [SerializeField]
-        EnemyController prefab = null;
+        EnemyCharacter prefab = null;
 
         [SerializeField]
         SplineAnchor anchor = null;
 
         public SplineAnchor Anchor => this.anchor;
-        public EnemyController Prefab => this.prefab;
+        public EnemyCharacter Prefab => this.prefab;
 
         void OnDrawGizmos()
         {

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Rail
 {
-    public class EnemyController : CharacterMover
+    public class EnemyCharacter : CharacterMover
     {
         [SerializeField]
         float knockbackDuration = 0.3f; // ノックバック継続時間

@@ -5,7 +5,7 @@ using UnityEngine.Splines;
 
 namespace Rail
 {
-    public class PlayerController : CharacterMover
+    public class PlayerCharacter : CharacterMover
     {
         [SerializeField]
         private CollisionObserver collisionObserver = null;

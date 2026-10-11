@@ -14,7 +14,7 @@
 ## 3層構造
 
 ```
-PlayerController / EnemyController   … 「どっちに動きたいか」を決める(入力・AI・ステート)
+PlayerCharacter / EnemyCharacter   … 「どっちに動きたいか」を決める(入力・AI・ステート)
         ↓ GetInput() で -1〜+1 を返す
 CharacterMover                       … 物理(重力・ジャンプ・接地・壁)とCharacterControllerへの適用
         ↓
@@ -22,7 +22,7 @@ SplineMover                          … railZの管理。レール座標⇔ワ�
 ```
 
 - 新しい「レール上を動くもの」を作るときは `SplineMover`(物理不要)か `CharacterMover`(重力あり)を継承して `GetInput()` を実装するだけ
-- 例: `EnemyController.GetInput()` は「端に着いたら向きを反転して±1を返す」だけで巡回が成立している
+- 例: `EnemyCharacter.GetInput()` は「端に着いたら向きを反転して±1を返す」だけで巡回が成立している
 
 ## 毎フレームの流れ
 

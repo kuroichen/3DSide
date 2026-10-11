@@ -28,7 +28,7 @@ Rigidbodyなしの子Colliderの場合、**子のGameObjectにしか届かない
 - 受け取った `Collider` は子(手足や武器)かもしれないので、相手のスクリプトを取るときは **`GetComponentInParent`** を使う:
 
 ```csharp
-// PlayerController: 当たったのは敵の子Colliderかもしれない
+// PlayerCharacter: 当たったのは敵の子Colliderかもしれない
 col.GetComponentInParent<IDamageable>()?.TakeDamage(...);
 ```
 

@@ -8,7 +8,7 @@ namespace Rail
     public sealed class PlayerView : MonoBehaviour
     {
         [SerializeField]
-        PlayerController playerController = null;
+        PlayerCharacter playerController = null;
 
         [SerializeField]
         CharacterController characterController = null;
@@ -67,7 +67,7 @@ namespace Rail
 
         void Reset()
         {
-            this.playerController = this.GetComponent<PlayerController>();
+            this.playerController = this.GetComponent<PlayerCharacter>();
 
             this.characterController = this.GetComponent<CharacterController>();
         }

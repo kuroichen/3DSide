@@ -724,7 +724,7 @@ namespace Rail.EditorTools
 
             var spawnPoint = Undo.AddComponent<EnemySpawnPoint>(go);
             var spawnSo = new SerializedObject(spawnPoint);
-            spawnSo.FindProperty("prefab").objectReferenceValue = prefab.GetComponent<EnemyController>();
+            spawnSo.FindProperty("prefab").objectReferenceValue = prefab.GetComponent<EnemyCharacter>();
             spawnSo.FindProperty("anchor").objectReferenceValue = anchor;
             spawnSo.ApplyModifiedProperties();
 
@@ -767,7 +767,7 @@ namespace Rail.EditorTools
                 GameObject enemySource = null;
                 foreach (var rootGo in scene.GetRootGameObjects())
                 {
-                    var enemy = rootGo.GetComponentInChildren<EnemyController>(true);
+                    var enemy = rootGo.GetComponentInChildren<EnemyCharacter>(true);
                     if (enemy != null)
                     {
                         enemySource = enemy.gameObject;
@@ -777,7 +777,7 @@ namespace Rail.EditorTools
 
                 if (enemySource == null)
                 {
-                    Debug.LogWarning("[Stage1Creator] CharacterTestSceneにEnemyControllerが見つかりません。");
+                    Debug.LogWarning("[Stage1Creator] CharacterTestSceneにEnemyCharacterが見つかりません。");
                     return null;
                 }
 

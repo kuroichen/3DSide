@@ -38,7 +38,7 @@ var t = SplineUtility.ConvertIndexUnit(
 ## その他のハマりどころ
 
 - **Transformスケールは(1,1,1)前提で使うのが安全**。`ConvertIndexUnit` はローカル長、`Length` 系はワールド長で動くものがあり、スケールが掛かると距離系が食い違う
-- `EvaluateTangent` の戻りは正規化されていない。向きに使うなら `normalized` を忘れない(`PlayerController.SetSpline` 参照)。またy成分を含むので、水平の向きだけ欲しい場合は `tangent.y = 0` してから正規化する
+- `EvaluateTangent` の戻りは正規化されていない。向きに使うなら `normalized` を忘れない(`PlayerCharacter.SetSpline` 参照)。またy成分を含むので、水平の向きだけ欲しい場合は `tangent.y = 0` してから正規化する
 - tの範囲外(<0, >1)は評価できない。端の外に外挿したい場合は端の位置+接線方向で自前計算する(`SplineRail` の端の余白処理がこれ)
 
 ## このプロジェクトでの利用箇所

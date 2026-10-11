@@ -27,7 +27,7 @@ namespace Rail
         /// <summary>
         /// 出現地点に敵を生成してレールに乗せる。
         /// </summary>
-        public EnemyController Create(EnemySpawnPoint spawnPoint, Transform parent)
+        public EnemyCharacter Create(EnemySpawnPoint spawnPoint, Transform parent)
         {
             if (spawnPoint == null || spawnPoint.Prefab == null)
             {

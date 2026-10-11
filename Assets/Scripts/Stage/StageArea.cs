@@ -26,7 +26,7 @@ namespace Rail
         // このエリアのスタート地点
         public SplineAnchor StartPoint => this.startPoint;
 
-        readonly List<EnemyController> spawnedEnemies = new();
+        readonly List<EnemyCharacter> spawnedEnemies = new();
     
         /// <summary>
         /// エリアの有効無効の切り替え

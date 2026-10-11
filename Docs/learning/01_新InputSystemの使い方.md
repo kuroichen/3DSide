@@ -1,6 +1,6 @@
 # 新InputSystemの使い方
 
-このプロジェクトで使っている範囲を中心にまとめる。実例は `PlayerController.cs`。
+このプロジェクトで使っている範囲を中心にまとめる。実例は `PlayerCharacter.cs`。
 
 ## このプロジェクトの構成
 
