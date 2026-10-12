@@ -15,8 +15,10 @@ namespace Rail.EditorTools
         const int BuilderVersion = 2;
 
         const string RequestMarkerPath = "Library/import_fantasy_theme";
-        const string PackagePath =
-            "~/Library/Unity/Asset Store-5.x/Pxltiger/3D ModelsEnvironments/Fantasy landscape.unitypackage";
+        // Asset Storeのダウンロード先(macOS)。ユーザー名に依存しないようホームフォルダから組み立てる
+        static readonly string PackagePath = Path.Combine(
+            System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile),
+            "Library/Unity/Asset Store-5.x/Pxltiger/3D ModelsEnvironments/Fantasy landscape.unitypackage");
         const string PackRoot = "Assets/FantasyEnvironments";
         const string PrefabFolder = PackRoot + "/Environments/Prefabs";
         const string TreeFolder = PackRoot + "/Environments/Ambient-Occlusion-Trees/Prefabs";
