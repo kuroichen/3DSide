@@ -28,7 +28,7 @@ namespace Rail.EditorTools
     /// 穴・トリガーの位置は設計座標(x)で指定し、弧長(railZ)へ変換して適用する。
     /// イベント: StageDefinition + AreaTrigger一式を配線済み
     ///  - エリア1末尾(x132)の扉でエリア2へ遷移。ゴール(x298)/ステージ出口(x304)はエリア2の末尾
-    ///  - 裏ゴール(3段目高台) / 中間地点(エリア1 x78・エリア2入口 x204)
+    ///  - 裏ゴール(3段目高台)。復帰地点はエリアに入った入口(チェックポイント専用のトリガーは置かない)
     ///  - 隠し部屋: x70頭上のジャンプトリガー → BonusArea(z+70の小部屋) → 出口で本筋x70へ帰還
     ///  - エリアはArea1/Area2/BonusのContentsをStageAreaで包み、切替は中身の活性で行う
     /// Library/create_stage1_request が存在する場合はコンパイル直後に一度だけ自動実行する(外部ツール連携用)。
@@ -38,12 +38,11 @@ namespace Rail.EditorTools
         const string RequestMarkerPath = "Library/create_stage1_request";
         const string ScenePath = "Assets/Scenes/World1_Stage1.unity";
         const string EnemyPrefabPath = "Assets/Prefabs/Enemy.prefab";
-        const string CharacterTestScenePath = "Assets/Scenes/CharacterTestScene.unity";
 
         [MenuItem("Tools/Rail/Create Stage 1")]
         public static void CreateStage1()
         {
-            // 敵プレハブを用意(無ければCharacterTestSceneのEnemyから抽出)
+            // 敵プレハブを用意
             var enemyPrefab = EnsureEnemyPrefab();
 
             // 新しいシーンを作成して保存
@@ -381,19 +380,6 @@ namespace Rail.EditorTools
             WireTriggerInfo(secretTrigger, secretInfo);
             triggers.Add(secretTrigger);
 
-            // 中間地点(飛び石の手前 x=78)
-            var checkpointRespawn = CreateAnchor(
-                "CheckpointRespawn", main, TAtX(main, 78.0f), rootTransform);
-            var checkpointTrigger = CreateEventTrigger(
-                "Checkpoint", main, TAtX(main, 78.0f), new Vector3(6.0f, 4.0f, 0.5f), 0.0f, parent);
-            var checkpointInfo = Undo.AddComponent<CheckPointInfo>(checkpointTrigger.gameObject);
-            var checkpointSo = new SerializedObject(checkpointInfo);
-            checkpointSo.FindProperty("checkPointId").stringValue = "cp-01";
-            checkpointSo.FindProperty("respawnPoint").objectReferenceValue = checkpointRespawn;
-            checkpointSo.ApplyModifiedProperties();
-            WireTriggerInfo(checkpointTrigger, checkpointInfo);
-            triggers.Add(checkpointTrigger);
-
             // 隠し部屋の入口(x=70の頭上。ジャンプしないと触れない高さ)
             var bonusEntryTrigger = CreateEventTrigger(
                 "BonusEntry", main, TAtX(main, 70.0f), new Vector3(2.5f, 1.5f, 1.5f), 2.6f, parent);
@@ -433,17 +419,6 @@ namespace Rail.EditorTools
             toArea2So.ApplyModifiedProperties();
             WireTriggerInfo(toArea2Trigger, toArea2Info);
             triggers.Add(toArea2Trigger);
-
-            // 中間地点cp-02(エリア2に入った直後に必ず踏ませて、リスポン先をエリア2側へ更新する)
-            var checkpoint2Trigger = CreateEventTrigger(
-                "Checkpoint2", main2, TAtX(main2, 204.0f), new Vector3(6.0f, 4.0f, 0.5f), 0.0f, parent2);
-            var checkpoint2Info = Undo.AddComponent<CheckPointInfo>(checkpoint2Trigger.gameObject);
-            var checkpoint2So = new SerializedObject(checkpoint2Info);
-            checkpoint2So.FindProperty("checkPointId").stringValue = "cp-02";
-            checkpoint2So.FindProperty("respawnPoint").objectReferenceValue = area2Start;
-            checkpoint2So.ApplyModifiedProperties();
-            WireTriggerInfo(checkpoint2Trigger, checkpoint2Info);
-            triggers.Add(checkpoint2Trigger);
 
             // ステージ出口(ゴールのさらに先。仮配置)
             var exitTrigger = CreateEventTrigger(
@@ -746,52 +721,14 @@ namespace Rail.EditorTools
         }
 
         /// <summary>
-        /// Enemy.prefabが無ければ、CharacterTestSceneのEnemyをプレハブ化して作る。
+        /// 敵プレハブを読み込む。無ければ警告し、敵の配置をスキップさせる(nullを返す)。
         /// </summary>
         static GameObject EnsureEnemyPrefab()
         {
-            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(EnemyPrefabPath);
-            if (existing != null) return existing;
-
-            if (!File.Exists(CharacterTestScenePath))
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(EnemyPrefabPath);
+            if (prefab == null)
             {
-                Debug.LogWarning($"[Stage1Creator] {CharacterTestScenePath} が見つかりません。");
-                return null;
-            }
-
-            var scene = EditorSceneManager.OpenScene(CharacterTestScenePath, OpenSceneMode.Additive);
-            GameObject prefab = null;
-
-            try
-            {
-                GameObject enemySource = null;
-                foreach (var rootGo in scene.GetRootGameObjects())
-                {
-                    var enemy = rootGo.GetComponentInChildren<EnemyCharacter>(true);
-                    if (enemy != null)
-                    {
-                        enemySource = enemy.gameObject;
-                        break;
-                    }
-                }
-
-                if (enemySource == null)
-                {
-                    Debug.LogWarning("[Stage1Creator] CharacterTestSceneにEnemyCharacterが見つかりません。");
-                    return null;
-                }
-
-                // 一時複製してシーン依存を切ってからプレハブ化
-                var temp = Object.Instantiate(enemySource);
-                temp.name = "Enemy";
-                prefab = PrefabUtility.SaveAsPrefabAsset(temp, EnemyPrefabPath);
-                Object.DestroyImmediate(temp);
-
-                Debug.Log($"[Stage1Creator] {EnemyPrefabPath} を作成しました。");
-            }
-            finally
-            {
-                EditorSceneManager.CloseScene(scene, true);
+                Debug.LogWarning($"[Stage1Creator] {EnemyPrefabPath} が見つかりません。");
             }
 
             return prefab;

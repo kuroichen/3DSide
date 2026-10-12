@@ -16,7 +16,7 @@ public async UniTask FadeOutIn(float duration = -1.0f)
 }
 ```
 
-`StageFlowManager.ChangeAreaAsync` が実戦形:「フェードアウト→エリア切替→プレイヤー移動→フェードイン」を上から順に書くだけで表現できている。コルーチンなら `yield return` の入れ子になるところ。
+`PlayerPresenter.HandleDeathAsync`(「暗転しきってから残機を消費 → 作り直し」)や `WorldPresenter.OpenStageSceneAsync`(「暗転してからStageSceneをロード」)が実戦形。順番を上から書くだけで表現できる。コルーチンなら `yield return` の入れ子になるところ。
 
 ## 撃ちっぱなし: UniTaskVoid + Forget
 
@@ -63,7 +63,9 @@ this.cts = CancellationTokenSource.CreateLinkedTokenSource(
                      → リスポーン実行
 ```
 
-フェードとアニメはどちらが先に終わるか分からない。CompletionSourceを「合流地点」にすることで、両方終わってからリスポーンする、が書ける(`StageFlowManager.OnPlayerDiedAsync`)。
+フェードとアニメはどちらが先に終わるか分からない。CompletionSourceを「合流地点」にすることで、両方終わってからリスポーンする、が書ける(旧 `StageFlowManager.OnPlayerDiedAsync`。削除済み)。
+
+現在の `PlayerPresenter` は、死亡アニメ終了を受けてから `await FadeOut()` し、終わってから残機を消費する直列の形にしている(合流が不要になる代わりに、暗転の開始が死亡アニメの後になる)。
 
 ## 細かい作法
 

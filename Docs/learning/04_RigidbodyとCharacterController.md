@@ -39,7 +39,7 @@ transform.SetPositionAndRotation(pos, rot);
 characterController.enabled = true;
 ```
 
-(`PlayerManager.MoveTo` がこのパターン)
+(`PlayerView.PlaceAt` がこのパターン)
 
 ### その他
 

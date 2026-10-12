@@ -1,5 +1,7 @@
 # ステージYAMLスキーマ設計書
 
+> **注記(2026-10)**: この設計書は旧構成(`StageFlowManager` / `PlayerManager`)を前提に書かれている。両クラスはVContainer + MVP移行で削除し、ステージ内進行は `StagePresenter` / `PlayerPresenter`、残機は `PlayerModel` が担う([ステージ進行の仕組み](../knowledge/ステージ進行の仕組み.md))。実装時は読み替えること。
+
 ステージを手続きコード(Creator)ではなく**宣言的なYAML**で定義できるようにする仕組みの設計書。
 [レベルデザイン法則集](../planning/レベルデザイン法則集.md)の語彙と設計ルールをスキーマに焼き込む。
 

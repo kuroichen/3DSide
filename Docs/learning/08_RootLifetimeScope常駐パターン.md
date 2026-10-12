@@ -58,7 +58,7 @@ RootはTitleでもWorldでも存在するので、ScreenTransitionの `Start Bla
 
 ## 注意点
 
-- **LifetimeScopeが無いシーンではRootが生成されない**。Rootは子Scopeの生成をきっかけに作られるため、Scopeを置いていないシーン(旧構成のCharacterTestScene、JumpGymなど)からPlayすると、AudioManagerもScreenTransitionも存在しない
+- **LifetimeScopeが無いシーンではRootが生成されない**。Rootは子Scopeの生成をきっかけに作られるため、Scopeを置いていないシーン(Scopeを置いていない検証用シーンなど)からPlayすると、AudioManagerもScreenTransitionも存在しない
 - Rootのプレハブで配線が欠けていると(`inputActions` など)、`RegisterInstance(null)` / `RegisterComponent(null)` がNullReferenceExceptionになり、**全シーンのDIが動かなくなる**。スタックトレースに `RootLifetimeScope.Configure` が出たらプレハブの配線を疑う
 - プレハブをInspectorで変更したら保存を忘れない(保存されていないと、YAML上は `{fileID: 0}` のまま)
 

@@ -1,5 +1,7 @@
 # GameFlowManager設計書
 
+> **注記(2026-10)**: この設計書は旧構成(`StageFlowManager` / `PlayerManager`)を前提に書かれている。両クラスはVContainer + MVP移行で削除し、ステージ内進行は `StagePresenter` / `PlayerPresenter`、残機は `PlayerModel` が担う([ステージ進行の仕組み](../knowledge/ステージ進行の仕組み.md))。実装時は読み替えること。
+
 [ロードマップ](../planning/ロードマップ.md) Phase 1「ゲームループを閉じる」の中核。
 2026-07-25の設計議論の合意内容。
 
