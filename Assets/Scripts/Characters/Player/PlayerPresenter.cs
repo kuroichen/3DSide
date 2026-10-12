@@ -56,6 +56,10 @@ namespace Rail
                 .Subscribe(ApplyDamage)
                 .AddTo(this.disposables);
 
+            playerEventBus.OnItemReceivedObservable()
+                .Subscribe(ApplyItem)
+                .AddTo(this.disposables);
+
             playerEventBus.OnInstantKillReceivedObservable()
                 .Subscribe(_ => ApplyInstantKill())
                 .AddTo(this.disposables);
@@ -128,6 +132,21 @@ namespace Rail
             if (!this.playerModel.Kill()) return;
 
             Die();
+        }
+
+        /// <summary>
+        /// 受け取ったアイテムの効果をModelに反映する。
+        /// </summary>
+        void ApplyItem(ItemEffect effect)
+        {
+            switch (effect.Type)
+            {
+                case ItemEffectType.Heal:
+                    this.playerModel.Heal(effect.Amount);
+                    break;
+                default:
+                    break;
+            }
         }
 
         /// <summary>

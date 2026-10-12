@@ -5,7 +5,7 @@ using UnityEngine.Splines;
 
 namespace Rail
 {
-    public class PlayerCharacter : CharacterMover
+    public class PlayerCharacter : CharacterMover, IItemReceiver
     {
         [SerializeField]
         private CollisionObserver collisionObserver = null;
@@ -36,10 +36,12 @@ namespace Rail
         public IObservable<DamageInfo> OnAttackReceivedObservable() => this.onAttackReceivedSubject;
         public IObservable<Unit> OnDeathAnimationFinishedObservable() => this.onDeathAnimationFinishedSubject;
         public IObservable<Unit> OnInstantKillReceivedObservable() => this.onInstantKillReceivedSubject;
+        public IObservable<ItemEffect> OnItemReceivedObservable() => this.onItemReceivedSubject;
 
         readonly Subject<DamageInfo> onAttackReceivedSubject = new();
         readonly Subject<Unit> onDeathAnimationFinishedSubject = new();
         readonly Subject<Unit> onInstantKillReceivedSubject = new();
+        readonly Subject<ItemEffect> onItemReceivedSubject = new();
 
         IPlayerInputSource inputSource = null;
 
@@ -54,8 +56,6 @@ namespace Rail
         {
             this.inputSource = inputSource;
         }
-
-
 
         public override void SetSpline(SplineContainer splineContainer, float t)
         {
@@ -75,6 +75,7 @@ namespace Rail
             this.onAttackReceivedSubject.AddTo(this);
             this.onDeathAnimationFinishedSubject.AddTo(this);
             this.onInstantKillReceivedSubject.AddTo(this);
+            this.onItemReceivedSubject.AddTo(this);
 
             // 死亡アニメーションの完了通知の購読
             this.animationEventObserver.OnAnimationEventObservable()
@@ -200,7 +201,7 @@ namespace Rail
         {
             // 奈落にいる間は毎フレーム呼ばれるので、死亡後は通知しない。
             if (this.currentState == PlayerState.Dead) return;
-            
+
             this.onInstantKillReceivedSubject.OnNext(Unit.Default);
         }
 
@@ -271,6 +272,20 @@ namespace Rail
         void UpdateDead()
         {
             // 一定時間後にリスポン？
+        }
+
+        #endregion
+
+        #region アイテム
+
+        public void ReceiveItem(ItemEffect effect)
+        {
+            if (this.currentState == PlayerState.Dead)
+            {
+                return;
+            }
+
+            this.onItemReceivedSubject.OnNext(effect);
         }
 
         #endregion

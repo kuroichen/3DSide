@@ -37,6 +37,18 @@ namespace Rail
         }
 
         /// <summary>
+        /// 回復する。死亡済みなら回復しない。
+        /// </summary>
+        /// <param name="amount"></param>
+        public void Heal(int amount)
+        {
+            var entity = this.dataStore.Entity;
+            if (amount <= 0 || entity.Hp <= 0) return;
+
+            this.dataStore.SetHp(Math.Min(entity.MaxHp, entity.Hp + amount));
+        }
+
+        /// <summary>
         /// ダメージを受け、その結果を返す。
         /// </summary>
         public DamageResult Damage(int damage)

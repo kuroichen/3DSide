@@ -40,6 +40,11 @@ namespace Rail
         /// </summary>
         public IObservable<Unit> OnLivesDepletedObservable() => this.onLivesDepletedSubject;
 
+        /// <summary>
+        /// アイテムを受け取った通知
+        /// </summary>
+        public IObservable<ItemEffect> OnItemReceivedObservable() => this.onItemReceivedSubject;
+
         readonly Subject<Unit> onDeadSubject = new();
         readonly Subject<Unit> onDeathAnimationFinishedSubject = new();
         readonly Subject<Unit> onInstantKillReceivedSubject = new();
@@ -47,6 +52,7 @@ namespace Rail
         readonly Subject<Unit> onLifeConsumedSubject = new();
         readonly Subject<Unit> onLivesDepletedSubject = new();
         readonly Subject<DamageInfo> onAttackReceivedSubject = new();
+        readonly Subject<ItemEffect> onItemReceivedSubject = new();
 
         public void Dispose()
         {
@@ -57,6 +63,7 @@ namespace Rail
             this.onLivesDepletedSubject.Dispose();
             this.onAttackReceivedSubject.Dispose();
             this.onInstantKillReceivedSubject.Dispose();
+            this.onItemReceivedSubject.Dispose();
         }
 
         /// <summary>
@@ -113,6 +120,14 @@ namespace Rail
         public void PublishLivesDepleted()
         {
             this.onLivesDepletedSubject.OnNext(Unit.Default);
+        }
+
+        /// <summary>
+        /// アイテムを受け取った通知
+        /// </summary>
+        public void PublishItemReceived(ItemEffect effect)
+        {
+            this.onItemReceivedSubject.OnNext(effect);
         }
     }
 }

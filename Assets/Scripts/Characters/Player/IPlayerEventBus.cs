@@ -40,5 +40,10 @@ namespace Rail
         /// 残機がなくなった通知
         /// </summary>
         IObservable<Unit> OnLivesDepletedObservable();
+
+        /// <summary>
+        /// アイテムを受け取った通知
+        /// </summary>
+        IObservable<ItemEffect> OnItemReceivedObservable();
     }
 }

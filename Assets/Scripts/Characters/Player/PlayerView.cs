@@ -16,6 +16,7 @@ namespace Rail
         public IObservable<Unit> OnDeathAnimationFinishedObservable() => this.playerCharacter.OnDeathAnimationFinishedObservable();
         public IObservable<DamageInfo> OnAttackReceivedObservable() => this.playerCharacter.OnAttackReceivedObservable();
         public IObservable<Unit> OnInstantKillReceivedObservable() => this.playerCharacter.OnInstantKillReceivedObservable();
+        public IObservable<ItemEffect> OnItemReceivedObservable() => this.playerCharacter.OnItemReceivedObservable();
 
         public SplineMover Mover => this.playerCharacter;
         
@@ -42,6 +43,10 @@ namespace Rail
 
             this.OnInstantKillReceivedObservable()
                 .Subscribe(_ => this.playerEventBus.PublishInstantKillReceived())
+                .AddTo(this);
+
+            this.OnItemReceivedObservable()
+                .Subscribe(this.playerEventBus.PublishItemReceived)
                 .AddTo(this);
 
             // 生成できたことを通知
