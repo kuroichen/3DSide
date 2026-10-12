@@ -12,9 +12,10 @@ namespace Rail
 
         [SerializeField]
         CharacterController characterController = null;
-        
+
         public IObservable<Unit> OnDeathAnimationFinishedObservable() => this.playerCharacter.OnDeathAnimationFinishedObservable();
         public IObservable<DamageInfo> OnAttackReceivedObservable() => this.playerCharacter.OnAttackReceivedObservable();
+        public IObservable<Unit> OnInstantKillReceivedObservable() => this.playerCharacter.OnInstantKillReceivedObservable();
 
         public SplineMover Mover => this.playerCharacter;
         
@@ -37,6 +38,10 @@ namespace Rail
             
             this.OnAttackReceivedObservable()
                 .Subscribe(this.playerEventBus.PublishAttackReceived)
+                .AddTo(this);
+
+            this.OnInstantKillReceivedObservable()
+                .Subscribe(_ => this.playerEventBus.PublishInstantKillReceived())
                 .AddTo(this);
 
             // 生成できたことを通知

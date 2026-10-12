@@ -55,6 +55,10 @@ namespace Rail
             playerEventBus.OnAttackReceivedObservable()
                 .Subscribe(ApplyDamage)
                 .AddTo(this.disposables);
+
+            playerEventBus.OnInstantKillReceivedObservable()
+                .Subscribe(_ => ApplyInstantKill())
+                .AddTo(this.disposables);
         }
 
         void IDisposable.Dispose()
@@ -108,13 +112,31 @@ namespace Rail
                     this.playerView.PlayHitReaction(damageInfo.attacker);
                     break;
                 case DamageResult.Died:
-                    this.playerView.Die();
-                    this.playerEventBus.PublishDead();
+                    Die();
                     break;
                 default:
                     Debug.LogError("[PlayerPresenter] [ApplyDamage] unknown DamageResult.");
                     break;
             }
+        }
+
+        /// <summary>
+        /// 即死を受けたら、HPに関係なく死亡させる。のけぞりは出さない。
+        /// </summary>
+        void ApplyInstantKill()
+        {
+            if (!this.playerModel.Kill()) return;
+
+            Die();
+        }
+
+        /// <summary>
+        /// 死亡を体に指示。
+        /// </summary>
+        void Die()
+        {
+            this.playerView.Die();
+            this.playerEventBus.PublishDead();
         }
 
         /// <summary>

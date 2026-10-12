@@ -27,6 +27,11 @@ namespace Rail
         IObservable<DamageInfo> OnAttackReceivedObservable();
 
         /// <summary>
+        /// プレイヤーが即死を受けた通知
+        /// </summary>
+        IObservable<Unit> OnInstantKillReceivedObservable();
+
+        /// <summary>
         /// 残機を減らした通知
         /// </summary>
         IObservable<Unit> OnLifeConsumedObservable();

@@ -35,9 +35,11 @@ namespace Rail
 
         public IObservable<DamageInfo> OnAttackReceivedObservable() => this.onAttackReceivedSubject;
         public IObservable<Unit> OnDeathAnimationFinishedObservable() => this.onDeathAnimationFinishedSubject;
+        public IObservable<Unit> OnInstantKillReceivedObservable() => this.onInstantKillReceivedSubject;
 
         readonly Subject<DamageInfo> onAttackReceivedSubject = new();
         readonly Subject<Unit> onDeathAnimationFinishedSubject = new();
+        readonly Subject<Unit> onInstantKillReceivedSubject = new();
 
         IPlayerInputSource inputSource = null;
 
@@ -72,6 +74,7 @@ namespace Rail
             
             this.onAttackReceivedSubject.AddTo(this);
             this.onDeathAnimationFinishedSubject.AddTo(this);
+            this.onInstantKillReceivedSubject.AddTo(this);
 
             // 死亡アニメーションの完了通知の購読
             this.animationEventObserver.OnAnimationEventObservable()
@@ -191,6 +194,14 @@ namespace Rail
         public void Die()
         {
             ChangeState(PlayerState.Dead);
+        }
+
+        protected override void OnFellIntoPit()
+        {
+            // 奈落にいる間は毎フレーム呼ばれるので、死亡後は通知しない。
+            if (this.currentState == PlayerState.Dead) return;
+            
+            this.onInstantKillReceivedSubject.OnNext(Unit.Default);
         }
 
         Vector3 CalcKnockback(Transform attacker)

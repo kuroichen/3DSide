@@ -177,13 +177,8 @@ namespace Rail
         void CheckFallDeath()
         {
             if (this.transform.position.y > this.fallDeathY) return;
-            if (this.runtimeStatus.CurrentHp <= 0) return;
 
-            TakeDamage(new DamageInfo
-            {
-                damage = this.runtimeStatus.CurrentHp,
-                attacker = this.transform,
-            });
+            OnFellIntoPit();
         }
 
         public abstract void TakeDamage(DamageInfo damageInfo);
@@ -394,7 +389,22 @@ namespace Rail
             yMove = this.verticalVelocity * Time.deltaTime;
         }
 
+        /// <summary>
+        /// 奈落に落ちた時の処理。規定では残りHPぶんのダメージを受けて死亡する。
+        /// </summary>
+        protected virtual void OnFellIntoPit()
+        {
+            if (this.runtimeStatus.CurrentHp <= 0)
+            {
+                return;
+            }
 
+            TakeDamage(new DamageInfo
+            {
+               damage = this.runtimeStatus.CurrentHp,
+               attacker = this.transform, 
+            });
+        }
 
         void OnJumped()
         {

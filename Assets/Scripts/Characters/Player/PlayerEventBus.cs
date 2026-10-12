@@ -21,6 +21,11 @@ namespace Rail
         public IObservable<DamageInfo> OnAttackReceivedObservable() => this.onAttackReceivedSubject;
 
         /// <summary>
+        /// 即死を受けた通知
+        /// </summary>
+        public IObservable<Unit> OnInstantKillReceivedObservable() => this.onInstantKillReceivedSubject;
+
+        /// <summary>
         /// スポーン通知
         /// </summary>
         public IObservable<Unit> OnSpawnedObservable() => this.onSpawnedSubject;
@@ -37,6 +42,7 @@ namespace Rail
 
         readonly Subject<Unit> onDeadSubject = new();
         readonly Subject<Unit> onDeathAnimationFinishedSubject = new();
+        readonly Subject<Unit> onInstantKillReceivedSubject = new();
         readonly Subject<Unit> onSpawnedSubject = new();
         readonly Subject<Unit> onLifeConsumedSubject = new();
         readonly Subject<Unit> onLivesDepletedSubject = new();
@@ -50,6 +56,7 @@ namespace Rail
             this.onLifeConsumedSubject.Dispose();
             this.onLivesDepletedSubject.Dispose();
             this.onAttackReceivedSubject.Dispose();
+            this.onInstantKillReceivedSubject.Dispose();
         }
 
         /// <summary>
@@ -74,6 +81,14 @@ namespace Rail
         public void PublishAttackReceived(DamageInfo damageInfo)
         {
             this.onAttackReceivedSubject.OnNext(damageInfo);
+        }
+
+        /// <summary>
+        /// 即死を受けたことを通知
+        /// </summary>
+        public void PublishInstantKillReceived()
+        {
+            this.onInstantKillReceivedSubject.OnNext(Unit.Default);
         }
 
         /// <summary>

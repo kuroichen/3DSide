@@ -62,5 +62,16 @@ namespace Rail
         {
             this.dataStore.SetHp(this.dataStore.Entity.MaxHp);
         }
+
+        /// <summary>
+        /// HPに関係なく即死させる。この時死亡した場合のみtrueを返す
+        /// </summary>
+        public bool Kill()
+        {
+            if (this.dataStore.Entity.Hp <= 0) return false;
+
+            this.dataStore.SetHp(0);
+            return true;
+        }
     }
 }
