@@ -49,8 +49,8 @@ namespace Rail
                 hp: this.playerStatus.hp,
                 maxHp: this.playerStatus.hp,
                 attack: this.playerStatus.attack,
-                defense: 0,
-                speed: 0,
+                speed: this.playerStatus.speed,
+                jumpForce: this.playerStatus.jumpForce,
                 lives: this.initialLives));
         
             // EntryPoint

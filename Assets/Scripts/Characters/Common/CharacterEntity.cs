@@ -6,8 +6,8 @@ namespace Rail
         public int MaxHp { get; internal set; }
 
         public int Attack { get; internal set; }
-        public int Defense { get; internal set; }
 
-        public int Speed { get; internal set; }
+        public float Speed { get; internal set; }
+        public float JumpForce { get; internal set; }
     }
 }

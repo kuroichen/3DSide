@@ -91,7 +91,7 @@ namespace Rail
                 {
                     var enemy = col.GetComponentInParent<CharacterMover>();
                     var damage = enemy != null
-                        ? enemy.AttackProperty.Attack
+                        ? enemy.Entity.Attack
                         : 0;
                     TakeDamage(new DamageInfo()
                     {
@@ -114,7 +114,7 @@ namespace Rail
                     col.GetComponentInParent<IDamageable>()?.TakeDamage(
                         new DamageInfo
                         {
-                            damage = this.runtimeStatus.Attack,
+                            damage = this.Entity.Attack,
                             attacker = this.transform,
                         });
                 })

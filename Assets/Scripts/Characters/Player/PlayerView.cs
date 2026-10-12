@@ -74,6 +74,11 @@ namespace Rail
             this.characterController.enabled = wasEnabled;
         }
 
+        public void SetEntity(IPlayerEntity entity)
+        {
+            this.playerCharacter.SetEntity(entity);
+        }
+
         public void SetInputSource(IPlayerInputSource inputSource)
         {
             this.playerCharacter.SetInputSource(inputSource);

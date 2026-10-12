@@ -4,9 +4,6 @@ namespace Rail
 {
     public abstract class CharacterMover : SplineMover, IDamageable
     {
-        [SerializeField]
-        protected CharacterStatus defaultStatus = null;
-
         // 非対称重力: 上昇はゆっくり減速し、下降は速く落とす(レトロアクション系のキレのあるジャンプ)
         // リファレンス値(30fpsフレーム単位): jumpForce 26 / gravityUp 2 / gravityDown 3
         // scaleJumpByHeightが有効な場合、この2つは身長から自動導出されて上書きされる
@@ -64,19 +61,13 @@ namespace Rail
         [SerializeField]
         float groundCheckDistance = 0.15f; // 足元からこの距離以内に地面があれば接地とみなす
 
-        // パラメータ
-        protected CharacterStatusRuntime runtimeStatus = null;
+        ICharacterEntity entity = null;
+        public ICharacterEntity Entity => this.entity;
 
         // 移動関連
         protected CharacterController characterController = null;
 
-        protected override float Speed => this.runtimeStatus.Speed;
-
-        // -----------------------------
-        // 外部公開用
-        // -----------------------------
-
-        public IAttack AttackProperty => this.runtimeStatus;
+        protected override float Speed => this.entity?.Speed ?? 0.0f;
 
         // -----------------------------
 
@@ -105,7 +96,7 @@ namespace Rail
         // 身長スケーリング有効時は導出値、無効時はステータスの値を使う
         protected float JumpVelocity => this.scaleJumpByHeight
             ? this.derivedJumpVelocity
-            : this.runtimeStatus.JumpForce;
+            : this.entity.JumpForce;
 
 
         protected override void Awake()
@@ -114,9 +105,16 @@ namespace Rail
             this.characterController = GetComponent<CharacterController>();
             this.wallLayerMask = LayerMask.GetMask("Terrain", "Gimmick");
 
-            this.runtimeStatus = new CharacterStatusRuntime(this.defaultStatus);
-
             SetupJumpProfile();
+        }
+
+        /// <summary>
+        /// 性能値の参照先を設定する。
+        /// </summary>
+        /// <param name="entity"></param>
+        public void SetEntity(ICharacterEntity entity)
+        {
+            this.entity = entity;
         }
 
         /// <summary>
@@ -392,14 +390,14 @@ namespace Rail
         /// </summary>
         protected virtual void OnFellIntoPit()
         {
-            if (this.runtimeStatus.CurrentHp <= 0)
+            if (this.entity.Hp <= 0)
             {
                 return;
             }
 
             TakeDamage(new DamageInfo
             {
-               damage = this.runtimeStatus.CurrentHp,
+               damage = this.entity.Hp,
                attacker = this.transform, 
             });
         }

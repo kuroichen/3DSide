@@ -95,6 +95,8 @@ namespace Rail
 
             if (this.playerView == null) return;
 
+            this.playerView.SetEntity(this.playerModel.Entity);
+
             this.playerView.SetInputSource(this.inputSource);
             this.followCamera.SetTarget(this.playerView.Mover);
 

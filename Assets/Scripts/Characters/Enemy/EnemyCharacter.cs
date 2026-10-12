@@ -6,6 +6,9 @@ namespace Rail
     public class EnemyCharacter : CharacterMover
     {
         [SerializeField]
+        CharacterStatus defaultStatus = null;
+
+        [SerializeField]
         float knockbackDuration = 0.3f; // ノックバック継続時間
 
         [SerializeField]
@@ -13,6 +16,8 @@ namespace Rail
 
         [SerializeField]
         float knockbackUpForce = 3.0f;
+
+        EnemyEntity enemyEntity = null;
 
         float direction = 1.0f;
 
@@ -30,15 +35,8 @@ namespace Rail
         {
             base.Awake();
 
-            this.runtimeStatus.OnSubLifeObservable()
-                .Do(_ => Debug.Log($"[Enemy][SubLife] hp: {this.runtimeStatus.CurrentHp}"))
-                .Subscribe(damage => ChangeState(EnemyState.Damage))
-                .AddTo(this);
-
-            this.runtimeStatus.OnDeadObservable()
-                .Do(_ => Debug.Log($"[Enemy][Dead] hp: {this.runtimeStatus.CurrentHp}"))
-                .Subscribe(_ => ChangeState(EnemyState.Dead))
-                .AddTo(this);
+            this.enemyEntity = new EnemyEntity(this.defaultStatus);
+            SetEntity(this.enemyEntity);
         }
 
         protected override void Update()
@@ -136,7 +134,16 @@ namespace Rail
             direction.y = 0.0f;
             AddImpulse(direction.normalized * this.knockbackForce + Vector3.up * this.knockbackUpForce);
 
-            this.runtimeStatus.TakeDamage(damageInfo.damage);
+            this.enemyEntity.Hp = Mathf.Max(0, this.enemyEntity.Hp - damageInfo.damage);
+            Debug.Log($"[Enemy][Damage] hp: {this.enemyEntity.Hp}");
+
+            if (this.enemyEntity.Hp <= 0)
+            {
+                ChangeState(EnemyState.Dead);
+                return;
+            }
+
+            ChangeState(EnemyState.Damage);
         }
 
         #endregion

@@ -8,15 +8,15 @@ namespace Rail
             int hp,
             int maxHp,
             int attack,
-            int defense,
-            int speed,
+            float speed,
+            float jumpForce,
             int lives)
         {
             this.Hp = hp;
             this.MaxHp = maxHp;
             this.Attack = attack;
-            this.Defense = defense;
             this.Speed = speed;
+            this.JumpForce = jumpForce;
             this.Lives = lives;
         }
     }
