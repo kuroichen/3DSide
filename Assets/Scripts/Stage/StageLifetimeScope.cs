@@ -16,10 +16,16 @@ namespace Rail
         CharacterStatus playerStatus = null;
 
         [SerializeField]
+        StageHUDView hudView = null;
+
+        [SerializeField]
         int initialLives = 2;
 
         protected override void Configure(IContainerBuilder builder)
         {
+            // HUD
+            builder.RegisterComponent<StageHUDView>(this.hudView);
+
             // Stage
             builder.RegisterComponent<SplineFollowCamera>(this.followCamera);
             builder.Register<StageLoader>(Lifetime.Scoped);
@@ -50,6 +56,7 @@ namespace Rail
             // EntryPoint
             builder.RegisterPlainEntryPoint<PlayerPresenter>(Lifetime.Scoped);
             builder.RegisterPlainEntryPoint<StagePresenter>(Lifetime.Scoped);
+            builder.RegisterPlainEntryPoint<StageHUDPresenter>(Lifetime.Scoped);
         }
     }
 }

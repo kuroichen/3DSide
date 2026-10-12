@@ -166,7 +166,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 673a8b4a7e1a943ee82497e190dd9e8a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Rail.PlayerView
-  playerController: {fileID: 7148127837883362467}
+  playerCharacter: {fileID: 7148127837883362467}
   characterController: {fileID: 5829666798495753997}
 --- !u!114 &7148127837883362467
 MonoBehaviour:

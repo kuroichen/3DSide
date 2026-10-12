@@ -51,6 +51,10 @@ namespace Rail
             playerEventBus.OnDeathAnimationFinishedObservable()
                 .Subscribe(_ => HandleDeathAsync().Forget())
                 .AddTo(this.disposables);
+
+            playerEventBus.OnAttackReceivedObservable()
+                .Subscribe(ApplyDamage)
+                .AddTo(this.disposables);
         }
 
         void IDisposable.Dispose()
@@ -85,6 +89,32 @@ namespace Rail
 
             this.playerView.SetInputSource(this.inputSource);
             this.followCamera.SetTarget(this.playerView.Mover);
+
+            // 生成し直したらHPは最大から
+            this.playerModel.ResetHp();
+        }
+
+        /// <summary>
+        /// 受けた攻撃をModelに反映し、結果に応じてのけぞりか死亡をViewに指示する。
+        /// </summary>
+        /// <param name="damageInfo"></param>
+        void ApplyDamage(DamageInfo damageInfo)
+        {
+            switch (this.playerModel.Damage(damageInfo.damage))
+            {
+                case DamageResult.Ignored:
+                    break;
+                case DamageResult.Damaged:
+                    this.playerView.PlayHitReaction(damageInfo.attacker);
+                    break;
+                case DamageResult.Died:
+                    this.playerView.Die();
+                    this.playerEventBus.PublishDead();
+                    break;
+                default:
+                    Debug.LogError("[PlayerPresenter] [ApplyDamage] unknown DamageResult.");
+                    break;
+            }
         }
 
         /// <summary>

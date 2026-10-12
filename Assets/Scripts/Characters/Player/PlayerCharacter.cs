@@ -33,6 +33,12 @@ namespace Rail
             Dead
         }
 
+        public IObservable<DamageInfo> OnAttackReceivedObservable() => this.onAttackReceivedSubject;
+        public IObservable<Unit> OnDeathAnimationFinishedObservable() => this.onDeathAnimationFinishedSubject;
+
+        readonly Subject<DamageInfo> onAttackReceivedSubject = new();
+        readonly Subject<Unit> onDeathAnimationFinishedSubject = new();
+
         IPlayerInputSource inputSource = null;
 
         PlayerState currentState = PlayerState.Move;
@@ -47,12 +53,7 @@ namespace Rail
             this.inputSource = inputSource;
         }
 
-        public IObservable<Unit> OnDiedObservable()
-        {
-            return this.animationEventObserver.OnAnimationEventObservable()
-                .Where(eventName => eventName == "OnDied")
-                .AsUnitObservable();
-        }
+
 
         public override void SetSpline(SplineContainer splineContainer, float t)
         {
@@ -68,6 +69,15 @@ namespace Rail
         protected override void Awake()
         {
             base.Awake();
+            
+            this.onAttackReceivedSubject.AddTo(this);
+            this.onDeathAnimationFinishedSubject.AddTo(this);
+
+            // 死亡アニメーションの完了通知の購読
+            this.animationEventObserver.OnAnimationEventObservable()
+                .Where(eventName => eventName == "OnDied")
+                .Subscribe(_ => onDeathAnimationFinishedSubject.OnNext(Unit.Default))
+                .AddTo(this);
 
             // プレイヤー自身の被弾判定
             this.collisionObserver.OnTriggerEnterObservable()
@@ -114,12 +124,6 @@ namespace Rail
                 .Subscribe(_ => this.weaponCollisionObserver.SetCollisionEnabled(true))
                 .AddTo(this);
 
-            // 死亡アニメーション終了
-            OnDiedObservable()
-                .Do(_ => Debug.Log($"[PlayerController][AnimationEvent]OnDied"))
-                .Subscribe(_ => Debug.Log("[PlayerController]死んだ！"))
-                .AddTo(this);
-
             // 攻撃終了(攻撃判定を無効化する)
             this.animationEventObserver.OnAnimationEventObservable()
                 .Where(eventName => eventName == "OnAttackEnd")
@@ -129,12 +133,6 @@ namespace Rail
                     this.weaponCollisionObserver.SetCollisionEnabled(false);
                     ChangeState(PlayerState.Move);
                 })
-                .AddTo(this);
-
-            // 死亡通知の購読
-            this.runtimeStatus.OnDeadObservable()
-                .Do(_ => Debug.Log($"[PlayerController]OnDead"))
-                .Subscribe(_ => ChangeState(PlayerState.Dead))
                 .AddTo(this);
         }
 
@@ -169,16 +167,30 @@ namespace Rail
         {
             if (this.currentState == PlayerState.Dead) return;
 
-            // ダメージ付与
-            this.runtimeStatus.TakeDamage(damageInfo.damage);
+            this.onAttackReceivedSubject.OnNext(damageInfo);
+        }
 
+        /// <summary>
+        /// ノックバックしてダメージステートへ
+        /// </summary>
+        /// <param name="attacker"></param>
+        public void PlayHitReaction(Transform attacker)
+        {
             if (this.currentState == PlayerState.Dead) return;
 
             // ノックバック
-            AddImpulse(CalcKnockback(damageInfo.attacker));
+            AddImpulse(CalcKnockback(attacker));
 
             // ダメージステートへ
             ChangeState(PlayerState.Damage);
+        }
+
+        /// <summary>
+        /// 死亡ステートへ移行
+        /// </summary>
+        public void Die()
+        {
+            ChangeState(PlayerState.Dead);
         }
 
         Vector3 CalcKnockback(Transform attacker)

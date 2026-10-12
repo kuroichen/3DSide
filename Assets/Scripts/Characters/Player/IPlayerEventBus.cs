@@ -21,6 +21,12 @@ namespace Rail
         IObservable<Unit> OnDeathAnimationFinishedObservable();
 
         /// <summary>
+        /// プレイヤー被弾通知
+        /// </summary>
+        /// <returns></returns>
+        IObservable<DamageInfo> OnAttackReceivedObservable();
+
+        /// <summary>
         /// 残機を減らした通知
         /// </summary>
         IObservable<Unit> OnLifeConsumedObservable();

@@ -8,15 +8,15 @@ namespace Rail
     public sealed class PlayerView : MonoBehaviour
     {
         [SerializeField]
-        PlayerCharacter playerController = null;
+        PlayerCharacter playerCharacter = null;
 
         [SerializeField]
         CharacterController characterController = null;
+        
+        public IObservable<Unit> OnDeathAnimationFinishedObservable() => this.playerCharacter.OnDeathAnimationFinishedObservable();
+        public IObservable<DamageInfo> OnAttackReceivedObservable() => this.playerCharacter.OnAttackReceivedObservable();
 
-        public IObservable<Unit> OnDeadObservable() => this.playerController.LifeProperty.OnDeadObservable();
-        public IObservable<Unit> OnDeathAnimationFinishedObservable() => this.playerController.OnDiedObservable();
-
-        public SplineMover Mover => this.playerController;
+        public SplineMover Mover => this.playerCharacter;
         
         PlayerEventBus playerEventBus = null;
 
@@ -31,17 +31,21 @@ namespace Rail
             // DI移行前のSceneから生成された場合は何もしない。
             if (this.playerEventBus == null) return;
 
-            this.OnDeadObservable()
-                .Subscribe(_ => this.playerEventBus.PublishDead())
-                .AddTo(this);
-
             this.OnDeathAnimationFinishedObservable()
                 .Subscribe(_ => this.playerEventBus.PublishDeathAnimationFinished())
+                .AddTo(this);
+            
+            this.OnAttackReceivedObservable()
+                .Subscribe(this.playerEventBus.PublishAttackReceived)
                 .AddTo(this);
 
             // 生成できたことを通知
             this.playerEventBus.PublishSpawned();
         }
+
+        public void PlayHitReaction(Transform attacker) => this.playerCharacter.PlayHitReaction(attacker);
+        public void Die() => this.playerCharacter.Die();
+
 
         public void PlaceAt(SplineAnchor anchor)
         {
@@ -50,7 +54,7 @@ namespace Rail
             var wasEnabled = this.characterController.enabled;
             this.characterController.enabled = false;
 
-            this.playerController.SetSpline(anchor.SplineContainer, anchor.T);
+            this.playerCharacter.SetSpline(anchor.SplineContainer, anchor.T);
 
             this.transform.SetPositionAndRotation(
                 anchor.transform.position,
@@ -62,12 +66,12 @@ namespace Rail
 
         public void SetInputSource(IPlayerInputSource inputSource)
         {
-            this.playerController.SetInputSource(inputSource);
+            this.playerCharacter.SetInputSource(inputSource);
         }
 
         void Reset()
         {
-            this.playerController = this.GetComponent<PlayerCharacter>();
+            this.playerCharacter = this.GetComponent<PlayerCharacter>();
 
             this.characterController = this.GetComponent<CharacterController>();
         }

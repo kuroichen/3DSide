@@ -91,11 +91,7 @@ namespace Rail
         {
             var playerView = this.playerSpawner.Spawn(this.spawnPoint);
             if (playerView == null) return;
-
-            playerView.OnDeadObservable()
-                .Subscribe(_ => this.onPlayerDeadSubject.OnNext(Unit.Default))
-                .AddTo(this.disposables);
-
+            
             playerView.OnDeathAnimationFinishedObservable()
                 .Subscribe(_ => this.onPlayerDiedSubject.OnNext(Unit.Default))
                 .AddTo(this.disposables);

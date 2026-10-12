@@ -4,7 +4,12 @@ namespace Rail
 {
     public class PlayerModel : IDisposable
     {
-        PlayerDataStore dataStore = null;
+        public IObservable<int> OnHpChangedObservable() => this.dataStore.OnHpChangedObservable();
+        public IObservable<int> OnLivesChangedObservable() => this.dataStore.OnLivesChangedObservable();
+
+        public IPlayerEntity Entity => this.dataStore.Entity;
+
+        readonly PlayerDataStore dataStore = null;
 
         public PlayerModel(
             PlayerDataStore dataStore)
@@ -31,24 +36,29 @@ namespace Rail
             return true;
         }
 
-
-        void Damage(int value)
+        /// <summary>
+        /// ダメージを受け、その結果を返す。
+        /// </summary>
+        public DamageResult Damage(int damage)
         {
-            var hp = this.dataStore.Entity.Hp - value;
-            hp = Math.Max(0, hp);
+            var hp = this.dataStore.Entity.Hp;
 
-            this.dataStore.SetHp(hp);
+            if (damage <= 0 || hp <= 0)
+            {
+                return DamageResult.Ignored; 
+            }
+
+            this.dataStore.SetHp(Math.Max(0, hp - damage));
+
+            return this.dataStore.Entity.Hp <= 0
+                ? DamageResult.Died
+                : DamageResult.Damaged;
         }
 
-        void Heal(int value)
-        {
-            var hp = this.dataStore.Entity.Hp + value;
-            hp = Math.Min(this.dataStore.Entity.MaxHp, hp);
-
-            this.dataStore.SetHp(hp);
-        }
-
-        void Reset()
+        /// <summary>
+        /// HPを最大値に戻す。プレイヤーの生成時に呼ぶ。
+        /// </summary>
+        public void ResetHp()
         {
             this.dataStore.SetHp(this.dataStore.Entity.MaxHp);
         }
