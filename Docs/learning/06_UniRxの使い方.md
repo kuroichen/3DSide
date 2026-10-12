@@ -40,10 +40,11 @@ playerManager.OnLivesChangedObservable()
 
 ```csharp
 this.collisionObserver.OnTriggerEnterObservable()
-    .Where(col => col.gameObject.layer == LayerMask.NameToLayer("Enemy"))  // 絞り込み
-    .Select(col => col.GetComponentInParent<ICharacterProperties>())        // 変換
-    .Where(properties => properties != null)                                // null除去
-    .Subscribe(properties => OnCollected(properties))
+    .Where(col => col.gameObject.layer == LayerMask.NameToLayer("Player"))  // 絞り込み
+    .Select(col => col.GetComponentInParent<IItemReceiver>())               // 変換
+    .Where(receiver => receiver != null)                                    // null除去
+    .First()                                                                // 最初の1回だけ
+    .Subscribe(receiver => receiver.ReceiveItem(this.Effect))
     .AddTo(this);
 ```
 

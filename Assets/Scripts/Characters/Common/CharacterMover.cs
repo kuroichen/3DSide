@@ -1,9 +1,8 @@
 using UnityEngine;
-using UnityEngine.Splines;
 
 namespace Rail
 {
-    public abstract class CharacterMover : SplineMover, IDamageable, ICharacterProperties
+    public abstract class CharacterMover : SplineMover, IDamageable
     {
         [SerializeField]
         protected CharacterStatus defaultStatus = null;
@@ -78,7 +77,6 @@ namespace Rail
         // -----------------------------
 
         public IAttack AttackProperty => this.runtimeStatus;
-        public ILife LifeProperty => this.runtimeStatus;
 
         // -----------------------------
 
