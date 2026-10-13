@@ -30,7 +30,7 @@
 - [specs/GameFlowManager設計書.md](specs/GameFlowManager設計書.md) — ゲーム全体進行の3層構造とゲームオーバー/クリアの流れ
 - [specs/ステージYAMLスキーマ設計書.md](specs/ステージYAMLスキーマ設計書.md) — ステージを宣言的YAMLで定義する仕組み(法則集をスキーマに焼き込む)
 - [specs/Stage1新設計.md](specs/Stage1新設計.md) — 法則集準拠のStage1再設計(設計YAMLと検算。Stage1Creatorの正)
-- [conventions/命名規約.md](conventions/命名規約.md) — FlowManager / Manager の使い分けなど
+- [conventions/命名規約.md](conventions/命名規約.md) — FlowManager / Manager の使い分け、キャラクター本体は「〜Character」
 - [conventions/コーディングスタイル.md](conventions/コーディングスタイル.md) — 既存コードからの抽出ドラフト
 - [knowledge/クラス相関図.md](knowledge/クラス相関図.md) — 全体の参照関係・継承・責務早見表(まずこれ)
 - [knowledge/レール移動系ナレッジ.md](knowledge/レール移動系ナレッジ.md) — レール移動の詳細・踏んだ罠
@@ -38,9 +38,9 @@
 - [knowledge/当たり判定の仕組み.md](knowledge/当たり判定の仕組み.md) — レイヤー/CollisionObserver/攻撃ウィンドウ
 - [knowledge/ノックバックの仕組み.md](knowledge/ノックバックの仕組み.md) — ワールド→レール空間の翻訳
 - [knowledge/ステージ作成パイプライン.md](knowledge/ステージ作成パイプライン.md) — Tools/Railメニューのツール群とテーマシステム
-- [knowledge/ステージ進行の仕組み.md](knowledge/ステージ進行の仕組み.md) — AreaTrigger/エリア切替/リスポーンの流れ
+- [knowledge/ステージ進行の仕組み.md](knowledge/ステージ進行の仕組み.md) — ロード/2段のView/エリア切替/リスポーン/暗転の担当
 - [knowledge/アニメーション連携の仕組み.md](knowledge/アニメーション連携の仕組み.md) — Animation Event/Observer、イベント名とパラメータ一覧
-- [knowledge/キャラクターステータスの仕組み.md](knowledge/キャラクターステータスの仕組み.md) — SO定義→Runtime実体、インターフェース分離
+- [knowledge/キャラクターステータスの仕組み.md](knowledge/キャラクターステータスの仕組み.md) — SO定義→Entity(実行時の値)、プレイヤーのHPはPlayerModelが本体
 - [knowledge/カメラ追従の仕組み.md](knowledge/カメラ追従の仕組み.md) — 接線と外積で「常に横から見る」
 - [knowledge/画面フェードの仕組み.md](knowledge/画面フェードの仕組み.md) — ScreenTransitionのAPIと設計方針
 - [learning/01_新InputSystemの使い方.md](learning/01_新InputSystemの使い方.md) — Project-wide Actions、入力読み取り3パターン、ハマりどころ

@@ -29,10 +29,11 @@ playerManager.OnLivesChangedObservable()
 | 方法 | 使いどころ |
 |---|---|
 | `.AddTo(this)` | 購読者が自分のGameObjectと同じ寿命でよいとき(基本これ) |
-| `CompositeDisposable` + `.Clear()` | **購読先が作り直されるとき**。例: `PlayerStatusUI` はプレイヤーがリスポーンで作り直されるたびに、古いプレイヤーへの購読をClearして新しいプレイヤーに購読し直す |
+| `CompositeDisposable` + `.Clear()` | **購読先が作り直されるとき**に、古い相手への購読をまとめて捨てて購読し直す |
+| `.AddTo(相手のComponent)` | 購読先の寿命に合わせたいとき。例: 作り直されるPlayerViewへの購読を `.AddTo(this.playerView)` にすると、破棄と同時に切れる |
 | `Subject.Dispose()` (OnDestroy) | 発行側のSubject自体の後始末 |
 
-リスポーンのような「相手が入れ替わる」購読はこのプロジェクトの頻出パターンなので、`PlayerStatusUI.BindPlayer` を手本にすること。
+リスポーンのような「相手が入れ替わる」購読は、このプロジェクトでは**EventBusを挟んで避けている**。作り直されるPlayerViewは自分のStartで常駐の `PlayerEventBus` に流し、Presenterはコンストラクタで一度だけBusを購読する(相手が入れ替わっても購読し直す必要がない)。
 
 ## パイプラインで加工する
 
@@ -49,7 +50,7 @@ this.collisionObserver.OnTriggerEnterObservable()
 ```
 
 - `.Do(x => Debug.Log(...))` はパイプラインの途中に挟めるログ。デバッグ後に1行消すだけで戻せる
-- `.AsUnitObservable()` は「値は要らない、起きたことだけ知りたい」への変換(`OnDiedObservable` 参照)
+- `.AsUnitObservable()` は「値は要らない、起きたことだけ知りたい」への変換(`PlayerCharacter.OnDeathAnimationFinishedObservable` などで使っていた)
 
 ## StartWith — 購読が遅れても初期値を受け取る
 
