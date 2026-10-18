@@ -8,5 +8,6 @@ namespace Rail
     /// </summary>
     public class StageExitInfo : AreaEventInfo
     {
+        public override AreaEventType EventType => AreaEventType.StageExit;
     }
 }

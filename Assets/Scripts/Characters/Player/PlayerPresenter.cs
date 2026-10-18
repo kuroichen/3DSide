@@ -44,6 +44,10 @@ namespace Rail
                 .Subscribe(RespawnPlayer)
                 .AddTo(this.disposables);
 
+            stageEventBus.OnStageClearedObservable()
+                .Subscribe(_ => StopControl())
+                .AddTo(this.disposables);
+
             playerEventBus.OnSpawnedObservable()
                 .Subscribe(_ => this.screenTransition.FadeIn().Forget())
                 .AddTo(this.disposables);
@@ -209,6 +213,16 @@ namespace Rail
             await this.screenTransition.FadeOut();
 
             ConsumeLife();
+        }
+
+        /// <summary>
+        /// プレイヤーの操作を止める（ゴール後など）
+        /// </summary>
+        void StopControl()
+        {
+            if (this.playerView == null) return;
+
+            this.playerView.SetInputSource(null);
         }
     }
 }

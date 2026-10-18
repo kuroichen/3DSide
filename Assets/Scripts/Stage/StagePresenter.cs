@@ -4,12 +4,17 @@ using VContainer;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UniRx;
+using System.ComponentModel;
 
 
 namespace Rail
 {
     public class StagePresenter : IDisposable
     {
+        const float GOAL_DISPLAY_SECONDS = 3.0f;
+        const string WORLD_SCENE_NAME = "WorldScene";
+
+        readonly SceneLoader sceneLoader = null;
         readonly StageLoader stageLoader = null;
         readonly StageModel stageModel = null;
         readonly StageEventBus stageEventBus = null;
@@ -26,13 +31,15 @@ namespace Rail
             StageModel stageModel,
             StageEventBus stageEventBus,
             IPlayerEventBus playerEventBus,
-            ScreenTransition screenTransition)
+            ScreenTransition screenTransition,
+            SceneLoader sceneLoader)
         {
             this.stageLoader = stageLoader;
             this.stageModel = stageModel;
             this.stageEventBus = stageEventBus;
             this.playerEventBus = playerEventBus;
             this.screenTransition = screenTransition;
+            this.sceneLoader = sceneLoader;
             
             // エリア内Trigger
             this.stageEventBus.OnAreaTriggerObservable()
@@ -75,16 +82,46 @@ namespace Rail
 
             // 初期エリアのセットアップ
             ChangeArea(this.stageDefinition.InitialArea.AreaId, this.stageDefinition.InitialArea.StartPoint);
+
+            // プレイフェーズに移行
+            this.stageModel.TryChangePhase(StagePhase.Playing);
         }
 
         void HandleAreaEvent(AreaEventInfo eventInfo)
         {
-            if (eventInfo is not AreaTransitionInfo transitionInfo)
-            {
-                return;
-            }
+            // プレイ中以外（ロード中・ゴール後・退出中）はエリアイベントを受け付けない。
+            if (this.stageModel.Phase != StagePhase.Playing) return;
 
-            this.ChangeArea(transitionInfo.DestinationArea.AreaId, transitionInfo.DestinationPoint);
+            switch (eventInfo.EventType)
+            {
+                case AreaEventType.Transition:
+                    {
+                        if (eventInfo is AreaTransitionInfo info)
+                        {
+                            this.ChangeArea(info.DestinationArea.AreaId, info.DestinationPoint);
+                        }
+                    }
+                    break;
+                case AreaEventType.Goal:
+                    {
+                        if (eventInfo is GoalInfo info)
+                        {
+                            ClearStageAsync(info.GoalType).Forget();
+                        }
+                    }
+                    break;
+                case AreaEventType.StageExit:
+                    {
+                        if (eventInfo is StageExitInfo)
+                        {
+                            ExitStageAsync().Forget();
+                        }
+                    }
+                    break;
+                default:
+                    Debug.LogError($"[StagePresenter][HandleAreaEvent] invalid enum argument.");
+                    break;
+            }    
         }
 
         void ChangeArea(string destinationAreaId, SplineAnchor destinationPoint)
@@ -117,6 +154,31 @@ namespace Rail
             {
                 view.SetAreaActive(previousAreaId, false);
             }
+        }
+
+        async UniTask ChangeSceneAsync(string sceneName)
+        {
+            await this.screenTransition.FadeOut();
+            await this.sceneLoader.LoadAsync(sceneName);
+        }
+
+        
+        async UniTask ClearStageAsync(GoalType goalType)
+        {
+            if (!this.stageModel.TryChangePhase(StagePhase.Cleared)) return;
+
+            this.stageEventBus.PublishStageCleared(goalType);
+
+            await UniTask.Delay(TimeSpan.FromSeconds(GOAL_DISPLAY_SECONDS));
+
+            await ChangeSceneAsync(WORLD_SCENE_NAME);
+        }
+
+        async UniTask ExitStageAsync()
+        {
+            if (!this.stageModel.TryChangePhase(StagePhase.Exiting)) return;
+
+            await ChangeSceneAsync(WORLD_SCENE_NAME);
         }
     }
 }

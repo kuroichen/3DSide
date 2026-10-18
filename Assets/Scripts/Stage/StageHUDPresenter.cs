@@ -10,7 +10,8 @@ namespace Rail
 
         public StageHUDPresenter(
             StageHUDView hudView,
-            PlayerModel playerModel)
+            PlayerModel playerModel,
+            IStageEventBus stageEventBus)
         {
             playerModel.OnHpChangedObservable()
                 .StartWith(playerModel.Entity.Hp)
@@ -20,6 +21,10 @@ namespace Rail
             playerModel.OnLivesChangedObservable()
                 .StartWith(playerModel.Entity.Lives)
                 .Subscribe(hudView.SetLives)
+                .AddTo(this.disposables);
+
+            stageEventBus.OnStageClearedObservable()
+                .Subscribe(_ => hudView.ShowGoal())
                 .AddTo(this.disposables);
         }
 

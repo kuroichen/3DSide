@@ -7,6 +7,6 @@ namespace Rail
     /// </summary>
     public abstract class AreaEventInfo : MonoBehaviour
     {
-        
+        public abstract AreaEventType EventType { get; }
     }
 }

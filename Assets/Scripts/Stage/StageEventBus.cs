@@ -14,11 +14,14 @@ namespace Rail
         
         public IObservable<SplineAnchor> OnRespawnRequestObservable() => this.onRespawnRequestSubject;
 
+        public IObservable<GoalType> OnStageClearedObservable() => this.onStageClearedSubject;
+
         public IObservable<Unit> OnGameOverObservable() => this.onGameOverSubject;
 
         readonly Subject<AreaEventInfo> onAreaTriggerSubject = new();
         readonly Subject<SplineAnchor> onPreparedSubject = new();
         readonly Subject<SplineAnchor> onRespawnRequestSubject = new();
+        readonly Subject<GoalType> onStageClearedSubject = new();
         readonly Subject<Unit> onGameOverSubject = new();
 
 
@@ -43,6 +46,11 @@ namespace Rail
         public void PublishRespawnRequest(SplineAnchor splineAnchor)
         {
             this.onRespawnRequestSubject.OnNext(splineAnchor);
+        }
+
+        public void PublishStageCleared(GoalType goalType)
+        {
+            this.onStageClearedSubject.OnNext(goalType);
         }
 
         public void PublishGameOver()

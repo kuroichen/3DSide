@@ -21,6 +21,11 @@ namespace Rail
         IObservable<SplineAnchor> OnRespawnRequestObservable();
 
         /// <summary>
+        /// ステージクリア通知（到達したゴールの種類）
+        /// </summary>
+        IObservable<GoalType> OnStageClearedObservable();
+
+        /// <summary>
         /// ゲームオーバー通知
         /// </summary>
         IObservable<Unit> OnGameOverObservable();

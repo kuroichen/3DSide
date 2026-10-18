@@ -14,6 +14,8 @@ namespace Rail
         [SerializeField, Tooltip("遷移先のスポーンポイント")]
         SplineAnchor destinationPoint = null;
 
+        public override AreaEventType EventType => AreaEventType.Transition;
+
         public StageArea DestinationArea => this.destinationArea;
         public SplineAnchor DestinationPoint => this.destinationPoint;
     }

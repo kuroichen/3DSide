@@ -32,6 +32,8 @@ namespace Rail
                 .Select(stageId => new StageRequest(WorldId.World1, stageId))
                 .Subscribe(request => this.OpenStageSceneAsync(request).Forget())
                 .AddTo(this.disposables);
+
+            this.screenTransition.FadeIn().Forget();
         }
         void IDisposable.Dispose()
         {

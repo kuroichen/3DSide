@@ -1,6 +1,5 @@
 using VContainer;
 using System;
-using NUnit.Framework;
 
 namespace Rail
 {
@@ -9,6 +8,9 @@ namespace Rail
         readonly StageDataStore dataStore = null;
 
         public IStageEntity Entity => this.dataStore.Entity;
+        public StagePhase Phase => this.dataStore.Phase;
+
+        public IObservable<StagePhase> OnPhaseChangedObservable() => this.dataStore.OnPhaseChangedObservable();
 
         [Inject]
         public StageModel(
@@ -33,5 +35,24 @@ namespace Rail
 
             return true;
         }
+
+        /// <summary>
+        /// 進行状態を遷移させる
+        /// </summary>
+        public bool TryChangePhase(StagePhase nextPhase)
+        {
+            if (!CanChangePhase(this.Phase, nextPhase)) return false;
+
+            this.dataStore.SetPhase(nextPhase);
+            return true;
+        }
+
+        static bool CanChangePhase(StagePhase current, StagePhase next) => (current, next) switch
+        {
+            (StagePhase.Loading, StagePhase.Playing) => true,
+            (StagePhase.Playing, StagePhase.Cleared) => true,
+            (StagePhase.Playing, StagePhase.Exiting) => true,
+            _ => false
+        };
     }
 }

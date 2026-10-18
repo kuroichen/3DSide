@@ -18,6 +18,8 @@ namespace Rail
         [SerializeField]
         GoalType goalType = GoalType.Normal;
 
+        public override AreaEventType EventType => AreaEventType.Goal;
+
         public GoalType GoalType => this.goalType;
     }
 }
