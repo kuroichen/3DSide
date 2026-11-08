@@ -27,7 +27,7 @@
 - [planning/ロードマップ.md](planning/ロードマップ.md) — 基本的なゲームとして完成させるためのロードマップ
 - [planning/レベルデザイン法則集.md](planning/レベルデザイン法則集.md) — でろでろ道中分析由来のステージ設計指針とアンチパターン(数値は仮説)
 - [specs/レール移動システム再設計案.md](specs/レール移動システム再設計案.md) — 次期レール移動・衝突・カメラの設計ドラフト（未実装・未確定）
-- [specs/GameFlowManager設計書.md](specs/GameFlowManager設計書.md) — ゲーム全体進行の3層構造とゲームオーバー/クリアの流れ
+- [specs/GameFlowManager設計書.md](specs/GameFlowManager設計書.md) — **旧構成に基づく未実装の構想資料**（現行MVP構成に合わせて再設計が必要）
 - [specs/ステージYAMLスキーマ設計書.md](specs/ステージYAMLスキーマ設計書.md) — ステージを宣言的YAMLで定義する仕組み(法則集をスキーマに焼き込む)
 - [specs/Stage1新設計.md](specs/Stage1新設計.md) — 法則集準拠のStage1再設計(設計YAMLと検算。Stage1Creatorの正)
 - [conventions/命名規約.md](conventions/命名規約.md) — FlowManager / Manager の使い分け、キャラクター本体は「〜Character」
