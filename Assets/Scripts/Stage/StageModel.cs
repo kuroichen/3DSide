@@ -52,6 +52,7 @@ namespace Rail
             (StagePhase.Loading, StagePhase.Playing) => true,
             (StagePhase.Playing, StagePhase.Cleared) => true,
             (StagePhase.Playing, StagePhase.Exiting) => true,
+            (StagePhase.Playing, StagePhase.GameOver) => true,
             _ => false
         };
     }

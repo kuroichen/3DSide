@@ -54,6 +54,11 @@ namespace Rail
                     this.stageEventBus.PublishRespawnRequest(this.stageModel.Entity.SpawnPoint);
                 })
                 .AddTo(this.disposables);
+            
+            // 残機使い切った通知
+            this.playerEventBus.OnLivesDepletedObservable()
+                .Subscribe(_ => GameOverAsync().Forget())
+                .AddTo(this.disposables);
 
             // 選択したステージを読み込み
             LoadStageAsync(stageRequest).Forget();
@@ -122,6 +127,16 @@ namespace Rail
                     Debug.LogError($"[StagePresenter][HandleAreaEvent] invalid enum argument.");
                     break;
             }    
+        }
+
+        /// <summary>
+        /// ゲームオーバー処理
+        /// </summary>
+        async UniTask GameOverAsync()
+        {
+            if (!this.stageModel.TryChangePhase(StagePhase.GameOver)) return;
+
+            this.stageEventBus.PublishGameOver();
         }
 
         void ChangeArea(string destinationAreaId, SplineAnchor destinationPoint)

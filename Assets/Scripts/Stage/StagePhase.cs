@@ -5,6 +5,7 @@ namespace Rail
         Loading,
         Playing,
         Cleared,
-        Exiting 
+        Exiting,
+        GameOver,
     }
 }

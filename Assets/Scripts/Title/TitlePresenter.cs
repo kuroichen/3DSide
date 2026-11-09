@@ -12,11 +12,14 @@ namespace Rail
         [Inject]
         public TitlePresenter(
             SceneLoader sceneLoader,
+            ScreenTransition screenTransition,
             TitleView view)
         {
             view.OnClickStartButtonAsObservable()
                 .Subscribe(async _ => await sceneLoader.LoadAsync("WorldScene"))
                 .AddTo(this.disposables);
+
+            screenTransition.FadeIn().Forget();
         }
 
         void IDisposable.Dispose()
